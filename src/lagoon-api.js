@@ -6,9 +6,9 @@ import { logAction, logError } from './logger.js';
 const execAsync = promisify(exec);
 
 // Helper function to execute and log Lagoon commands
-async function execLagoonCommand(command, action = 'Unknown Action') {
+export async function execLagoonCommand(command, action = 'Unknown Action') {
   console.log(chalk.blue(`Executing: ${chalk.bold(command)}`));
-  
+
   try {
     const result = await execAsync(command);
     logAction(action, command, 'Success');
@@ -24,10 +24,10 @@ export async function getLagoonInstances() {
   try {
     const command = 'lagoon config list --output-json';
     const { stdout } = await execLagoonCommand(command, 'List Lagoon Instances');
-    
+
     // Parse the JSON output
     const configData = JSON.parse(stdout);
-    
+
     // Extract instance names from the JSON data and clean them
     const instances = configData.data.map(instance => {
       // Extract just the base name without (default)(current) or other annotations
@@ -36,7 +36,7 @@ export async function getLagoonInstances() {
       const baseName = fullName.split(/\s+|\(/).shift().trim();
       return baseName;
     });
-    
+
     return instances;
   } catch (error) {
     throw new Error(`Failed to get Lagoon instances: ${error.message}`);
@@ -48,10 +48,10 @@ export async function getProjectsWithDetails(instance) {
   try {
     const command = `lagoon -l ${instance} list projects --output-json`;
     const { stdout } = await execLagoonCommand(command, `List Projects for ${instance}`);
-    
+
     // Parse the JSON output
     const projectsData = JSON.parse(stdout);
-    
+
     // Return the full project data
     return projectsData.data;
   } catch (error) {
@@ -64,13 +64,13 @@ export async function getProjects(instance) {
   try {
     const command = `lagoon -l ${instance} list projects --output-json`;
     const { stdout } = await execLagoonCommand(command, `List Projects for ${instance}`);
-    
+
     // Parse the JSON output
     const projectsData = JSON.parse(stdout);
-    
+
     // Extract project names from the JSON data
     const projects = projectsData.data.map(project => project.projectname);
-    
+
     return projects;
   } catch (error) {
     throw new Error(`Failed to get projects for instance ${instance}: ${error.message}`);
@@ -82,13 +82,13 @@ export async function getEnvironments(instance, project) {
   try {
     const command = `lagoon -l ${instance} -p ${project} list environments --output-json`;
     const { stdout } = await execLagoonCommand(command, `List Environments for ${project}`);
-    
+
     // Parse the JSON output
     const environmentsData = JSON.parse(stdout);
-    
+
     // Extract environment names from the JSON data
     const environments = environmentsData.data.map(env => env.name);
-    
+
     return environments;
   } catch (error) {
     throw new Error(`Failed to get environments for project ${project}: ${error.message}`);
@@ -101,13 +101,13 @@ export async function getUsers(instance, project) {
     const command = `lagoon -l ${instance} -p ${project} list all-users`;
     const { stdout } = await execLagoonCommand(command, `List Users for ${project}`);
     const lines = stdout.split('\n').filter(line => line.trim() !== '');
-    
+
     // Skip the header line and extract user names
     const users = lines.slice(1).map(line => {
       const parts = line.split('|').map(part => part.trim());
       return parts[0]; // First column is the user name
     });
-    
+
     return users;
   } catch (error) {
     throw new Error(`Failed to get users for project ${project}: ${error.message}`);
@@ -118,14 +118,14 @@ export async function getUsers(instance, project) {
 export async function deleteEnvironment(instance, project, environment) {
   // Check if environment is protected
   if (
-    environment === 'production' || 
-    environment === 'master' || 
-    environment === 'develop' || 
+    environment === 'production' ||
+    environment === 'master' ||
+    environment === 'develop' ||
     environment.startsWith('project/')
   ) {
     throw new Error(`Cannot delete protected environment: ${environment}`);
   }
-  
+
   try {
     const command = `lagoon -l ${instance} -p ${project} delete environment --environment ${environment} --force --output-json`;
     // response if successful is a JSON {"result":"success"}
@@ -148,7 +148,7 @@ export async function generateLoginLink(instance, project, environment) {
   if (environment === 'production' || environment === 'master') {
     throw new Error(`Cannot generate login link for protected environment: ${environment}`);
   }
-  
+
   try {
     const command = `lagoon ssh -l ${instance} -p ${project} -e ${environment} -C "drush user:unblock --uid=1 && drush uli"`;
     const { stdout } = await execLagoonCommand(command, `Generate Login Link for ${environment} in ${project}`);
@@ -188,4 +188,4 @@ export async function clearDrupalCache(instance, project, environment) {
   } catch (error) {
     throw new Error(`Failed to clear cache for environment ${environment}: ${error.message}`);
   }
-} 
+}
