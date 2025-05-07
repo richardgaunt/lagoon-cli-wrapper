@@ -280,8 +280,11 @@ export async function deployBranch(instance, project, branch) {
         success: true,
         message: `Branch ${branch} is being deployed to ${project}`
       };
+    } else if (response.result === 'error') {
+      throw new Error(`Failed to deploy branch ${branch}: ${response.message || JSON.stringify(response)}`);
     } else {
-      throw new Error(`Failed to deploy branch ${branch}: ${JSON.stringify(response)}`);
+      // Handle unexpected response formats
+      throw new Error(`Unexpected response when deploying branch ${branch}: ${JSON.stringify(response)}`);
     }
   } catch (error) {
     throw new Error(`Failed to deploy branch ${branch}: ${error.message}`);
