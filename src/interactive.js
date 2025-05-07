@@ -10,10 +10,20 @@ import {
   generateLoginLink,
   clearDrupalCache,
   gitUrlToGithubUrl,
-  extractPrNumber
+  extractPrNumber,
+  getGitBranches,
+  deployBranch
 } from './lagoon-api';
 import { logAction } from './logger';
 import { configureSshKey } from './lagoon-ssh-key-configurator';
+
+// Register the autocomplete prompt with inquirer
+try {
+  const autocompletePrompt = (await import('inquirer-autocomplete-prompt')).default;
+  inquirer.registerPrompt('autocomplete', autocompletePrompt);
+} catch (error) {
+  console.log(chalk.yellow('Autocomplete prompt not available, falling back to standard list selection.'));
+}
 
 export async function startInteractiveMode() {
   console.log(chalk.green('Welcome to the Lagoon CLI Wrapper!'));
@@ -65,6 +75,9 @@ export async function startInteractiveMode() {
           break;
         case 'clearCache':
           await clearCacheFlow(currentInstance, currentProject, githubBaseUrl);
+          break;
+        case 'deployBranch':
+          await deployBranchFlow(currentInstance, currentProject, currentProjectDetails);
           break;
         case 'configureUserSshKey':
           await configureSshKey(currentInstance, currentProject);
@@ -167,6 +180,7 @@ async function showMainMenu(instance, project) {
         { name: 'Delete Environment', value: 'deleteEnvironment' },
         { name: 'Generate Login Link', value: 'generateLoginLink' },
         { name: 'Clear Drupal Cache', value: 'clearCache' },
+        { name: 'Deploy Branch', value: 'deployBranch' },
         { name: 'Change Project', value: 'changeProject' },
         { name: 'Change Instance', value: 'changeInstance' },
         { name: 'Configure User SSH Key', value: 'configureUserSshKey' },
@@ -430,6 +444,132 @@ async function clearCacheFlow(instance, project, githubBaseUrl) {
     console.log(chalk.cyan(result || 'Cache cleared successfully.'));
   } catch (error) {
     spinner2.fail(`Failed to clear cache: ${error.message}`);
+  }
+
+  await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'continue',
+      message: 'Press Enter to continue...'
+    }
+  ]);
+}
+
+async function deployBranchFlow(instance, project, projectDetails) {
+  // Check if project has a git URL
+  if (!projectDetails || !projectDetails.giturl) {
+    console.log(chalk.yellow('\nThis project does not have a valid Git URL configured.'));
+    await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'continue',
+        message: 'Press Enter to continue...'
+      }
+    ]);
+    return;
+  }
+
+  console.log(chalk.blue(`\nFetching branches from ${chalk.bold(projectDetails.giturl)}...`));
+  
+  const spinner = ora('Loading branches...').start();
+  try {
+    // Get branches from the git repository
+    const branches = await getGitBranches(projectDetails.giturl);
+    spinner.succeed(`Found ${branches.length} branches.`);
+
+    if (branches.length === 0) {
+      console.log(chalk.yellow('\nNo branches found in the git repository.'));
+      await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'continue',
+          message: 'Press Enter to continue...'
+        }
+      ]);
+      return;
+    }
+
+    // Sort the branches to put main/master/develop first, then the rest alphabetically
+    const sortedBranches = branches.sort((a, b) => {
+      const priority = ['main', 'master', 'develop'];
+      const aIndex = priority.indexOf(a);
+      const bIndex = priority.indexOf(b);
+      
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      } else if (aIndex !== -1) {
+        return -1;
+      } else if (bIndex !== -1) {
+        return 1;
+      } else {
+        return a.localeCompare(b);
+      }
+    });
+
+    // Allow user to select a branch using autocomplete
+    const { selectedBranch } = await inquirer.prompt([
+      {
+        type: 'autocomplete',
+        name: 'selectedBranch',
+        message: 'Select a branch to deploy:',
+        source: (answersSoFar, input = '') => {
+          return Promise.resolve(
+            sortedBranches.filter(branch => 
+              !input || branch.toLowerCase().includes(input.toLowerCase())
+            )
+          );
+        },
+        // Fallback to regular list if autocomplete is not available
+        when: (answers) => {
+          // If inquirer-autocomplete-prompt is not available, use regular list
+          if (!inquirer.prompt.prompts.autocomplete) {
+            return false;
+          }
+          return true;
+        }
+      },
+      {
+        type: 'list',
+        name: 'selectedBranch',
+        message: 'Select a branch to deploy:',
+        choices: sortedBranches,
+        when: (answers) => {
+          // Use this if autocomplete is not available
+          return !inquirer.prompt.prompts.autocomplete;
+        }
+      }
+    ]);
+
+    // Confirm deployment
+    const { confirm } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'confirm',
+        message: `Are you sure you want to deploy branch ${chalk.bold(selectedBranch)} to project ${chalk.bold(project)}?`,
+        default: false
+      }
+    ]);
+
+    if (!confirm) {
+      console.log(chalk.yellow('\nDeployment cancelled.'));
+      return;
+    }
+
+    // Deploy the branch
+    const spinner2 = ora(`Deploying branch ${selectedBranch}...`).start();
+    try {
+      const result = await deployBranch(instance, project, selectedBranch);
+      spinner2.succeed('Deployment initiated successfully.');
+
+      console.log(chalk.green('\nDeployment Status:'));
+      console.log(chalk.cyan(result.message || 'Branch deployment initiated.'));
+      console.log(chalk.blue('\nNote: The deployment process runs asynchronously and may take several minutes to complete.'));
+      console.log(chalk.blue('You can check the status of the deployment in the Lagoon UI.'));
+    } catch (error) {
+      spinner2.fail(`Failed to deploy branch: ${error.message}`);
+    }
+  } catch (error) {
+    spinner.fail(`Failed to fetch branches: ${error.message}`);
   }
 
   await inquirer.prompt([

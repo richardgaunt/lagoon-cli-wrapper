@@ -2,6 +2,9 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import chalk from 'chalk';
 import { logAction, logError } from './logger';
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
 
 const execAsync = promisify(exec);
 
@@ -185,5 +188,105 @@ export async function clearDrupalCache(instance, project, environment) {
     return stdout.trim();
   } catch (error) {
     throw new Error(`Failed to clear cache for environment ${environment}: ${error.message}`);
+  }
+}
+
+// Helper function to create a temporary directory for git operations
+async function createTempDir() {
+  const tempDir = path.join(os.tmpdir(), `lagoon-cli-wrapper-${Date.now()}`);
+  await fs.mkdir(tempDir, { recursive: true });
+  return tempDir;
+}
+
+// Helper function to clone a git repository
+async function cloneRepository(gitUrl, directory) {
+  try {
+    const command = `git clone --bare ${gitUrl} ${directory}`;
+    await execAsync(command);
+    return true;
+  } catch (error) {
+    logError('Clone Repository', command, error);
+    throw new Error(`Failed to clone repository: ${error.message}`);
+  }
+}
+
+// Helper function to list branches in a git repository
+async function listBranches(directory) {
+  try {
+    const command = `cd ${directory} && git branch -r`;
+    const { stdout } = await execAsync(command);
+    
+    // Parse the branches from the output
+    return stdout
+      .split('\n')
+      .map(branch => branch.trim())
+      .filter(branch => branch && !branch.includes('HEAD'))
+      .map(branch => branch.replace('origin/', ''));
+  } catch (error) {
+    logError('List Branches', command, error);
+    throw new Error(`Failed to list branches: ${error.message}`);
+  }
+}
+
+// Get all branches from a git repository
+export async function getGitBranches(gitUrl) {
+  try {
+    if (!gitUrl) {
+      throw new Error('Git URL not provided or invalid');
+    }
+
+    // Create a temporary directory
+    const tempDir = await createTempDir();
+    
+    try {
+      // Clone the repository
+      await cloneRepository(gitUrl, tempDir);
+      
+      // List branches
+      const branches = await listBranches(tempDir);
+      
+      // Clean up temporary directory
+      await fs.rm(tempDir, { recursive: true, force: true });
+      
+      return branches;
+    } catch (error) {
+      // Make sure to clean up even if an error occurs
+      try {
+        await fs.rm(tempDir, { recursive: true, force: true });
+      } catch (cleanupError) {
+        console.error(`Failed to clean up temporary directory: ${cleanupError.message}`);
+      }
+      
+      throw error;
+    }
+  } catch (error) {
+    throw new Error(`Failed to get git branches: ${error.message}`);
+  }
+}
+
+// Deploy a branch to Lagoon
+export async function deployBranch(instance, project, branch) {
+  try {
+    // Validate branch name to prevent command injection
+    if (!/^[a-zA-Z0-9_.-]+$/.test(branch)) {
+      throw new Error('Invalid branch name. Branch names must contain only alphanumeric characters, underscores, hyphens, and periods.');
+    }
+    
+    const command = `lagoon -l ${instance} -p ${project} deploy branch --branch ${branch} --output-json`;
+    const { stdout } = await execLagoonCommand(command, `Deploy Branch ${branch} to ${project}`);
+    
+    // Parse the JSON response
+    const response = JSON.parse(stdout);
+    
+    if (response.result === 'success') {
+      return {
+        success: true,
+        message: `Branch ${branch} is being deployed to ${project}`
+      };
+    } else {
+      throw new Error(`Failed to deploy branch ${branch}: ${JSON.stringify(response)}`);
+    }
+  } catch (error) {
+    throw new Error(`Failed to deploy branch ${branch}: ${error.message}`);
   }
 }
