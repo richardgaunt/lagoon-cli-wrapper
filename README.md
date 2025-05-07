@@ -1,5 +1,8 @@
 # Lagoon CLI Wrapper
 
+[![Tests](https://github.com/richardgaunt/lagoon-cli-wrapper/actions/workflows/tests.yml/badge.svg)](https://github.com/richardgaunt/lagoon-cli-wrapper/actions/workflows/tests.yml)
+[![Linting](https://github.com/richardgaunt/lagoon-cli-wrapper/actions/workflows/lint.yml/badge.svg)](https://github.com/richardgaunt/lagoon-cli-wrapper/actions/workflows/lint.yml)
+
 A Node.js CLI wrapper for the Lagoon CLI that provides an interactive interface for common operations.
 
 ## Prerequisites
