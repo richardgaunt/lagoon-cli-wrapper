@@ -236,6 +236,11 @@ export async function generateLoginLink(instance, project, environment) {
  * @returns {string|null} The normalized GitHub HTTPS URL, or `null` if the input is not a GitHub URL.
  */
 export function gitUrlToGithubUrl(gitUrl) {
+  // Handle null, undefined, or empty strings
+  if (!gitUrl) {
+    return null;
+  }
+  
   // Handle SSH URLs like git@github.com:org/repo.git
   if (gitUrl.startsWith('git@github.com:')) {
     const path = gitUrl.replace('git@github.com:', '').replace('.git', '');
@@ -254,6 +259,11 @@ export function gitUrlToGithubUrl(gitUrl) {
  * @returns {string|null} PR number or null if not found.
  */
 export function extractPrNumber(environmentName) {
+  // Handle null, undefined, or empty strings
+  if (!environmentName) {
+    return null;
+  }
+  
   const match = environmentName.match(/^pr-(\d+)$/i);
   return match ? match[1] : null;
 }
