@@ -26,5 +26,8 @@
     "inquirer-autocomplete-prompt": "^3.0.1",
     "js-yaml": "^4.1.0",
     "ora": "^7.0.1"
+  },
+  "engine": {
+    "node": ">22"
   }
 }
