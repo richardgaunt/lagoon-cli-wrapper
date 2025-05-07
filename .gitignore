@@ -27,3 +27,4 @@ jspm_packages/
 .env.test.local
 .env.production.local
 .env.local 
+**/.claude/settings.local.json

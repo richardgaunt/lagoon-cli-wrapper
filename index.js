@@ -1,7 +1,6 @@
-#!/usr/bin/env node
 
 import { program } from 'commander';
-import { startInteractiveMode } from './src/interactive.js';
+import { startInteractiveMode } from './src/interactive';
 
 program
   .name('lagoon-wrapper')
@@ -18,4 +17,4 @@ if (process.argv.length === 2) {
   startInteractiveMode();
 } else {
   program.parse(process.argv);
-} 
+}
