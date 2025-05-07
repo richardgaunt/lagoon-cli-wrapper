@@ -95,7 +95,17 @@ export async function getEnvironments(instance, project) {
   }
 }
 
-// Get all users for a project
+/**
+ * Retrieves the list of usernames associated with a Lagoon project.
+ *
+ * Executes the Lagoon CLI to list all users for the specified project and parses the output to extract usernames.
+ *
+ * @param {string} instance - The Lagoon instance name.
+ * @param {string} project - The project name.
+ * @returns {Promise<string[]>} An array of usernames for the project.
+ *
+ * @throws {Error} If the command fails or output cannot be parsed.
+ */
 export async function getUsers(instance, project) {
   try {
     const command = `lagoon -l ${instance} -p ${project} list all-users`;
@@ -117,11 +127,11 @@ export async function getUsers(instance, project) {
 /**
  * Deletes a Lagoon environment unless it is protected.
  *
- * Throws an error if the environment is protected (such as 'production', 'master', 'develop', or names starting with 'project/'). Executes the Lagoon CLI to delete the specified environment and returns true if successful.
+ * Prevents deletion of protected environments such as 'production', 'master', 'develop', or any environment whose name starts with 'project/'. Executes the Lagoon CLI to delete the specified environment and returns true if the operation succeeds.
  *
- * @param {string} instance - The Lagoon instance name.
- * @param {string} project - The project name.
- * @param {string} environment - The environment name to delete.
+ * @param {string} instance - Name of the Lagoon instance.
+ * @param {string} project - Name of the project.
+ * @param {string} environment - Name of the environment to delete.
  * @returns {boolean} True if the environment was deleted successfully.
  *
  * @throws {Error} If the environment is protected or if the deletion fails.
@@ -153,7 +163,18 @@ export async function deleteEnvironment(instance, project, environment) {
   }
 }
 
-// Generate login link for an environment
+/**
+ * Generates a one-time login link for a specified Lagoon environment using Drush.
+ *
+ * Throws an error if the environment is protected (e.g., 'production' or 'master').
+ *
+ * @param {string} instance - The Lagoon instance name.
+ * @param {string} project - The Lagoon project name.
+ * @param {string} environment - The environment for which to generate the login link.
+ * @returns {string} The generated one-time login URL.
+ *
+ * @throws {Error} If the environment is protected or if the login link generation fails.
+ */
 export async function generateLoginLink(instance, project, environment) {
   // Check if environment is protected
   if (environment === 'production' || environment === 'master') {
@@ -170,10 +191,12 @@ export async function generateLoginLink(instance, project, environment) {
 }
 
 /**
- * Converts a Git SSH or HTTPS URL to a standard GitHub HTTPS URL without the `.git` suffix.
+ * Converts a GitHub SSH or HTTPS repository URL to a standard HTTPS URL without the `.git` suffix.
+ *
+ * Returns `null` if the input is not a GitHub URL.
  *
  * @param {string} gitUrl - The Git repository URL to convert.
- * @returns {string|null} The corresponding GitHub HTTPS URL, or {@code null} if the input is not a GitHub URL.
+ * @returns {string|null} The normalized GitHub HTTPS URL, or `null` if the input is not a GitHub URL.
  */
 export function gitUrlToGithubUrl(gitUrl) {
   // Handle SSH URLs like git@github.com:org/repo.git
@@ -193,7 +216,16 @@ export function extractPrNumber(environmentName) {
   return match ? match[1] : null;
 }
 
-// Clear Drupal cache for an environment
+/**
+ * Clears the Drupal cache for a specified environment using Lagoon CLI and Drush.
+ *
+ * @param {string} instance - The Lagoon instance name.
+ * @param {string} project - The project name within the Lagoon instance.
+ * @param {string} environment - The environment name to clear the cache for.
+ * @returns {string} The trimmed output from the Drush cache clear command.
+ *
+ * @throws {Error} If the cache clearing operation fails for the specified environment.
+ */
 export async function clearDrupalCache(instance, project, environment) {
   try {
     const command = `lagoon ssh -l ${instance} -p ${project} -e ${environment} -C "drush cr"`;
@@ -206,7 +238,16 @@ export async function clearDrupalCache(instance, project, environment) {
 
 // No helper functions needed for the more efficient git ls-remote approach
 
-// Get all branches from a git repository using ls-remote (much more efficient)
+/**
+ * Retrieves all branch names from a remote Git repository.
+ *
+ * Executes `git ls-remote --heads` on the provided repository URL and parses the output to return an array of branch names.
+ *
+ * @param {string} gitUrl - The URL of the Git repository.
+ * @returns {Promise<string[]>} An array of branch names found in the repository.
+ *
+ * @throws {Error} If the Git URL is missing, invalid, authentication fails, the repository is not found, or another error occurs during command execution.
+ */
 export async function getGitBranches(gitUrl) {
   try {
     if (!gitUrl) {
@@ -257,7 +298,16 @@ export async function getGitBranches(gitUrl) {
   }
 }
 
-// Deploy a branch to Lagoon
+/**
+ * Deploys a specified branch to a Lagoon project environment.
+ *
+ * Validates the branch name for allowed characters and escapes special shell characters to prevent command injection. Executes the Lagoon CLI to initiate deployment and parses the JSON response.
+ *
+ * @param {string} branch - The name of the branch to deploy. Must contain only alphanumeric characters, slashes, underscores, hyphens, and periods.
+ * @returns {{ success: true, message: string }} An object indicating successful initiation of the deployment and a descriptive message.
+ *
+ * @throws {Error} If the branch name is invalid, the Lagoon CLI command fails, or the deployment is unsuccessful.
+ */
 export async function deployBranch(instance, project, branch) {
   try {
     // Validate branch name to prevent command injection - allow slashes in addition to other safe characters

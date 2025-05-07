@@ -12,8 +12,11 @@ if (!fs.existsSync(LOG_DIR)) {
 }
 
 /**
- * Get the current log file name based on the date
- * @returns {string} The log file path
+ * Returns the file path for the current day's log file in the `.logs` directory.
+ *
+ * The log file is named using the format `log--YYYYMMDD.txt`, where `YYYYMMDD` is the current date.
+ *
+ * @returns {string} Absolute path to the log file for today.
  */
 function getLogFilePath() {
   const now = new Date();
@@ -22,11 +25,13 @@ function getLogFilePath() {
 }
 
 /**
- * Appends an action entry with timestamp, action, command, and optional result to the current day's log file.
+ * Appends a timestamped action entry to the current day's log file.
+ *
+ * The log entry includes the action description, executed CLI command, and an optional result string.
  *
  * @param {string} action - Description of the action performed.
- * @param {string} command - The CLI command executed.
- * @param {string} [result] - Optional result of the command.
+ * @param {string} command - The CLI command that was executed.
+ * @param {string} [result] - Optional result or output of the command.
  */
 export function logAction(action, command, result = null) {
   const timestamp = new Date().toISOString(); // ISO8601 timestamp
@@ -38,11 +43,11 @@ export function logAction(action, command, result = null) {
 }
 
 /**
- * Appends an error entry to the current day's log file with a timestamp, action, command, and error message.
+ * Logs an error entry with a timestamp, action description, command, and error message to the current day's log file.
  *
- * @param {string} action - Description of the action being performed.
+ * @param {string} action - Description of the action during which the error occurred.
  * @param {string} command - The CLI command that was executed.
- * @param {Error} error - The error encountered during execution.
+ * @param {Error} error - The error encountered.
  */
 export function logError(action, command, error) {
   const timestamp = new Date().toISOString(); // ISO8601 timestamp
