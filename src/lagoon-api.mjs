@@ -127,7 +127,9 @@ export async function getUsers(instance, project) {
 /**
  * Deletes a Lagoon environment unless it is protected.
  *
- * Prevents deletion of protected environments such as 'production', 'master', 'develop', or any environment whose name starts with 'project/'. Executes the Lagoon CLI to delete the specified environment and returns true if the operation succeeds.
+ * Prevents deletion of protected environments such as 'production', 'master', 'develop', or any environment whose
+ * name starts with 'project/'. Executes the Lagoon CLI to delete the specified environment and returns true if the
+ * operation succeeds.
  *
  * @param {string} instance - Name of the Lagoon instance.
  * @param {string} project - Name of the project.
@@ -241,12 +243,14 @@ export async function clearDrupalCache(instance, project, environment) {
 /**
  * Retrieves all branch names from a remote Git repository.
  *
- * Executes `git ls-remote --heads` on the provided repository URL and parses the output to return an array of branch names.
+ * Executes `git ls-remote --heads` on the provided repository URL and parses the output to return an array of branch
+ * names.
  *
  * @param {string} gitUrl - The URL of the Git repository.
  * @returns {Promise<string[]>} An array of branch names found in the repository.
  *
- * @throws {Error} If the Git URL is missing, invalid, authentication fails, the repository is not found, or another error occurs during command execution.
+ * @throws {Error} If the Git URL is missing, invalid, authentication fails, the repository is not found, or another
+ * error occurs during command execution.
  */
 export async function getGitBranches(gitUrl) {
   try {
@@ -301,17 +305,20 @@ export async function getGitBranches(gitUrl) {
 /**
  * Deploys a specified branch to a Lagoon project environment.
  *
- * Validates the branch name for allowed characters and escapes special shell characters to prevent command injection. Executes the Lagoon CLI to initiate deployment and parses the JSON response.
+ * Validates the branch name for allowed characters and escapes special shell characters to prevent command injection.
+ * Executes the Lagoon CLI to initiate deployment and parses the JSON response.
  *
- * @param {string} branch - The name of the branch to deploy. Must contain only alphanumeric characters, slashes, underscores, hyphens, and periods.
- * @returns {{ success: true, message: string }} An object indicating successful initiation of the deployment and a descriptive message.
+ * @param {string} branch - The name of the branch to deploy. Must contain only alphanumeric characters, slashes,
+ * underscores, hyphens, and periods.
+ * @returns {{ success: true, message: string }} An object indicating successful initiation of the deployment and
+ * a descriptive message.
  *
  * @throws {Error} If the branch name is invalid, the Lagoon CLI command fails, or the deployment is unsuccessful.
  */
 export async function deployBranch(instance, project, branch) {
   try {
     // Validate branch name to prevent command injection - allow slashes in addition to other safe characters
-    if (!/^[a-zA-Z0-9_./\-]+$/.test(branch)) {
+    if (!/^[a-zA-Z0-9_./-]+$/.test(branch)) {
       throw new Error('Invalid branch name. Branch names must contain only alphanumeric characters, slashes, underscores, hyphens, and periods.');
     }
 
