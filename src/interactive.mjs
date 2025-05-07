@@ -520,7 +520,7 @@ async function deployBranchFlow(instance, project, projectDetails) {
 
     // Allow user to select a branch using autocomplete if available, or regular list if not
     let selectedBranch;
-    
+
     // Check if the autocomplete prompt is registered
     if (inquirer.prompt.prompts.autocomplete) {
       // Use autocomplete selection
@@ -531,7 +531,7 @@ async function deployBranchFlow(instance, project, projectDetails) {
           message: 'Select a branch to deploy:',
           source: (answersSoFar, input = '') => {
             return Promise.resolve(
-              sortedBranches.filter(branch => 
+              sortedBranches.filter(branch =>
                 !input || branch.toLowerCase().includes(input.toLowerCase())
               )
             );
@@ -550,21 +550,6 @@ async function deployBranchFlow(instance, project, projectDetails) {
         }
       ]);
       selectedBranch = answer.branch;
-    }
-
-    // Confirm deployment
-    const { confirm } = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'confirm',
-        message: `Are you sure you want to deploy branch ${chalk.bold(selectedBranch)} to project ${chalk.bold(project)}?`,
-        default: false
-      }
-    ]);
-
-    if (!confirm) {
-      console.log(chalk.yellow('\nDeployment cancelled.'));
-      return;
     }
 
     // Deploy the branch
