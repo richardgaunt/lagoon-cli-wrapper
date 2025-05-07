@@ -181,8 +181,8 @@ async function showMainMenu(instance, project) {
   console.log(chalk.blue(`\nCurrent Instance: ${chalk.bold(instance)}`));
   console.log(chalk.blue(`Current Project: ${chalk.bold(project)}\n`));
 
-  const action = await select({
-    message: 'What would you like to do?',
+  const action = await search({
+    message: 'What would you like to do? (type to search)',
     choices: [
       { value: 'listEnvironments', label: 'List Environments' },
       { value: 'listUsers', label: 'List Users' },
