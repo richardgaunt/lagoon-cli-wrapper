@@ -25,6 +25,11 @@ try {
   console.log(chalk.yellow('Autocomplete prompt not available, falling back to standard list selection.'));
 }
 
+/**
+ * Launches the interactive Lagoon CLI wrapper, allowing users to manage projects and environments through a guided command-line interface.
+ *
+ * Presents menus for selecting Lagoon instances and projects, and provides options to list environments or users, delete environments, generate login links, clear Drupal cache, configure SSH keys, and change selections. Handles errors gracefully and logs major actions throughout the session.
+ */
 export async function startInteractiveMode() {
   console.log(chalk.green('Welcome to the Lagoon CLI Wrapper!'));
   logAction('Application Start', 'N/A', 'Interactive mode started');
@@ -165,6 +170,13 @@ async function selectProjectWithDetails(instance) {
   };
 }
 
+/**
+ * Displays the main menu for the interactive CLI and prompts the user to select an action.
+ *
+ * @param {string} instance - The name of the currently selected Lagoon instance.
+ * @param {string} project - The name of the currently selected project.
+ * @returns {Promise<string>} The action selected by the user.
+ */
 async function showMainMenu(instance, project) {
   console.log(chalk.blue(`\nCurrent Instance: ${chalk.bold(instance)}`));
   console.log(chalk.blue(`Current Project: ${chalk.bold(project)}\n`));
@@ -470,7 +482,7 @@ async function deployBranchFlow(instance, project, projectDetails) {
   }
 
   console.log(chalk.blue(`\nFetching branches from ${chalk.bold(projectDetails.giturl)}...`));
-  
+
   const spinner = ora('Loading branches...').start();
   try {
     // Get branches from the git repository
@@ -494,7 +506,7 @@ async function deployBranchFlow(instance, project, projectDetails) {
       const priority = ['main', 'master', 'develop'];
       const aIndex = priority.indexOf(a);
       const bIndex = priority.indexOf(b);
-      
+
       if (aIndex !== -1 && bIndex !== -1) {
         return aIndex - bIndex;
       } else if (aIndex !== -1) {
@@ -514,29 +526,17 @@ async function deployBranchFlow(instance, project, projectDetails) {
         message: 'Select a branch to deploy:',
         source: (answersSoFar, input = '') => {
           return Promise.resolve(
-            sortedBranches.filter(branch => 
+            sortedBranches.filter(branch =>
               !input || branch.toLowerCase().includes(input.toLowerCase())
             )
           );
-        },
-        // Fallback to regular list if autocomplete is not available
-        when: (answers) => {
-          // If inquirer-autocomplete-prompt is not available, use regular list
-          if (!inquirer.prompt.prompts.autocomplete) {
-            return false;
-          }
-          return true;
         }
       },
       {
         type: 'list',
         name: 'selectedBranch',
         message: 'Select a branch to deploy:',
-        choices: sortedBranches,
-        when: (answers) => {
-          // Use this if autocomplete is not available
-          return !inquirer.prompt.prompts.autocomplete;
-        }
+        choices: sortedBranches
       }
     ]);
 

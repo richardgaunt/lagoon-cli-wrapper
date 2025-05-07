@@ -1,10 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import chalk from 'chalk';
-import { logAction, logError } from './logger';
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import { logAction, logError } from './logger.mjs';
 
 const execAsync = promisify(exec);
 
@@ -117,7 +114,18 @@ export async function getUsers(instance, project) {
   }
 }
 
-// Delete an environment
+/**
+ * Deletes a Lagoon environment unless it is protected.
+ *
+ * Throws an error if the environment is protected (such as 'production', 'master', 'develop', or names starting with 'project/'). Executes the Lagoon CLI to delete the specified environment and returns true if successful.
+ *
+ * @param {string} instance - The Lagoon instance name.
+ * @param {string} project - The project name.
+ * @param {string} environment - The environment name to delete.
+ * @returns {boolean} True if the environment was deleted successfully.
+ *
+ * @throws {Error} If the environment is protected or if the deletion fails.
+ */
 export async function deleteEnvironment(instance, project, environment) {
   // Check if environment is protected
   if (
@@ -161,7 +169,12 @@ export async function generateLoginLink(instance, project, environment) {
   }
 }
 
-// Helper function to convert git URL to GitHub URL
+/**
+ * Converts a Git SSH or HTTPS URL to a standard GitHub HTTPS URL without the `.git` suffix.
+ *
+ * @param {string} gitUrl - The Git repository URL to convert.
+ * @returns {string|null} The corresponding GitHub HTTPS URL, or {@code null} if the input is not a GitHub URL.
+ */
 export function gitUrlToGithubUrl(gitUrl) {
   // Handle SSH URLs like git@github.com:org/repo.git
   if (gitUrl.startsWith('git@github.com:')) {
@@ -191,75 +204,34 @@ export async function clearDrupalCache(instance, project, environment) {
   }
 }
 
-// Helper function to create a temporary directory for git operations
-async function createTempDir() {
-  const tempDir = path.join(os.tmpdir(), `lagoon-cli-wrapper-${Date.now()}`);
-  await fs.mkdir(tempDir, { recursive: true });
-  return tempDir;
-}
+// No helper functions needed for the more efficient git ls-remote approach
 
-// Helper function to clone a git repository
-async function cloneRepository(gitUrl, directory) {
-  try {
-    const command = `git clone --bare ${gitUrl} ${directory}`;
-    await execAsync(command);
-    return true;
-  } catch (error) {
-    logError('Clone Repository', command, error);
-    throw new Error(`Failed to clone repository: ${error.message}`);
-  }
-}
-
-// Helper function to list branches in a git repository
-async function listBranches(directory) {
-  try {
-    const command = `cd ${directory} && git branch -r`;
-    const { stdout } = await execAsync(command);
-    
-    // Parse the branches from the output
-    return stdout
-      .split('\n')
-      .map(branch => branch.trim())
-      .filter(branch => branch && !branch.includes('HEAD'))
-      .map(branch => branch.replace('origin/', ''));
-  } catch (error) {
-    logError('List Branches', command, error);
-    throw new Error(`Failed to list branches: ${error.message}`);
-  }
-}
-
-// Get all branches from a git repository
+// Get all branches from a git repository using ls-remote (much more efficient)
 export async function getGitBranches(gitUrl) {
   try {
     if (!gitUrl) {
       throw new Error('Git URL not provided or invalid');
     }
-
-    // Create a temporary directory
-    const tempDir = await createTempDir();
     
-    try {
-      // Clone the repository
-      await cloneRepository(gitUrl, tempDir);
-      
-      // List branches
-      const branches = await listBranches(tempDir);
-      
-      // Clean up temporary directory
-      await fs.rm(tempDir, { recursive: true, force: true });
-      
-      return branches;
-    } catch (error) {
-      // Make sure to clean up even if an error occurs
-      try {
-        await fs.rm(tempDir, { recursive: true, force: true });
-      } catch (cleanupError) {
-        console.error(`Failed to clean up temporary directory: ${cleanupError.message}`);
-      }
-      
-      throw error;
-    }
+    // Use git ls-remote to list all references (only the heads/branches)
+    const command = `git ls-remote --heads ${gitUrl}`;
+    const { stdout } = await execAsync(command);
+    
+    // Parse the branch names from the output
+    const branches = stdout
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .map(line => {
+        // Extract the branch name from lines like:
+        // d7b0a24b046d00b6aeac1280e4d1a74297551444	refs/heads/main
+        const match = line.match(/refs\/heads\/(.+)$/);
+        return match ? match[1] : null;
+      })
+      .filter(branch => branch !== null);
+    
+    return branches;
   } catch (error) {
+    logError('List Branches', `git ls-remote ${gitUrl}`, error);
     throw new Error(`Failed to get git branches: ${error.message}`);
   }
 }
@@ -271,13 +243,13 @@ export async function deployBranch(instance, project, branch) {
     if (!/^[a-zA-Z0-9_.-]+$/.test(branch)) {
       throw new Error('Invalid branch name. Branch names must contain only alphanumeric characters, underscores, hyphens, and periods.');
     }
-    
+
     const command = `lagoon -l ${instance} -p ${project} deploy branch --branch ${branch} --output-json`;
     const { stdout } = await execLagoonCommand(command, `Deploy Branch ${branch} to ${project}`);
-    
+
     // Parse the JSON response
     const response = JSON.parse(stdout);
-    
+
     if (response.result === 'success') {
       return {
         success: true,

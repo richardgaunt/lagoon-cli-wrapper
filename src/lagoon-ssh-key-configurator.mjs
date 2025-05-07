@@ -4,7 +4,7 @@ import os from 'os';
 import yaml from 'js-yaml';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { execLagoonCommand } from './lagoon-api';
+import { execLagoonCommand } from './lagoon-api.mjs';
 import { logAction, logError } from './logger';
 
 // Path to the .lagoon.yml file
