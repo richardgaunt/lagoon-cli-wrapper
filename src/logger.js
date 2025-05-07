@@ -30,9 +30,9 @@ function getLogFilePath() {
 export function logAction(action, command, result = null) {
   const timestamp = new Date().toISOString(); // ISO8601 timestamp
   const logMessage = `[${timestamp}] ACTION: ${action} | COMMAND: ${command}${result ? ` | RESULT: ${result}` : ''}\n`;
-  
+
   const logFilePath = getLogFilePath();
-  
+
   fs.appendFileSync(logFilePath, logMessage);
 }
 
@@ -45,8 +45,8 @@ export function logAction(action, command, result = null) {
 export function logError(action, command, error) {
   const timestamp = new Date().toISOString(); // ISO8601 timestamp
   const logMessage = `[${timestamp}] ERROR: ${action} | COMMAND: ${command} | ERROR: ${error.message}\n`;
-  
+
   const logFilePath = getLogFilePath();
-  
+
   fs.appendFileSync(logFilePath, logMessage);
-} 
+}

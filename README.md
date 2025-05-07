@@ -7,6 +7,7 @@ A Node.js CLI wrapper for the Lagoon CLI that provides an interactive interface 
 - Node.js (v14 or higher)
 - Lagoon CLI installed and configured
 - A valid `.lagoon.yml` file in your home directory
+- SSH key(s) in your ~/.ssh directory for Lagoon authentication
 
 ## Installation
 
@@ -22,6 +23,12 @@ npm install
 ```bash
 npm link
 ```
+
+## Commands
+
+- `npm start` - Run the CLI without global installation
+- `lagoon-wrapper` - Run the CLI if globally installed
+- `lagoon-wrapper interactive` - Explicitly start in interactive mode
 
 ## Usage
 

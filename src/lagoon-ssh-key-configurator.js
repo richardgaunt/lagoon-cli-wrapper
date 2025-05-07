@@ -4,8 +4,8 @@ import os from 'os';
 import yaml from 'js-yaml';
 import inquirer from 'inquirer';
 import chalk from 'chalk';
-import { execLagoonCommand } from './lagoon-api.js';
-import { logAction, logError } from './logger.js';
+import { execLagoonCommand } from './lagoon-api';
+import { logAction, logError } from './logger';
 
 // Path to the .lagoon.yml file
 const LAGOON_CONFIG_PATH = path.join('~/.lagoon.yml');

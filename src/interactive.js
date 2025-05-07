@@ -3,7 +3,6 @@ import chalk from 'chalk';
 import ora from 'ora';
 import {
   getLagoonInstances,
-  getProjects,
   getProjectsWithDetails,
   getEnvironments,
   getUsers,
@@ -12,9 +11,9 @@ import {
   clearDrupalCache,
   gitUrlToGithubUrl,
   extractPrNumber
-} from './lagoon-api.js';
-import { logAction } from './logger.js';
-import { configureSshKey } from "./lagoon-ssh-key-configurator.js";
+} from './lagoon-api';
+import { logAction } from './logger';
+import { configureSshKey } from './lagoon-ssh-key-configurator';
 
 export async function startInteractiveMode() {
   console.log(chalk.green('Welcome to the Lagoon CLI Wrapper!'));
@@ -170,7 +169,7 @@ async function showMainMenu(instance, project) {
         { name: 'Clear Drupal Cache', value: 'clearCache' },
         { name: 'Change Project', value: 'changeProject' },
         { name: 'Change Instance', value: 'changeInstance' },
-        { name: 'Configure User SSH Key', value: 'configureUserSshKey'},
+        { name: 'Configure User SSH Key', value: 'configureUserSshKey' },
         { name: 'Exit', value: 'exit' }
       ]
     }

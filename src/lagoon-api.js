@@ -1,7 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import chalk from 'chalk';
-import { logAction, logError } from './logger.js';
+import { logAction, logError } from './logger';
 
 const execAsync = promisify(exec);
 
@@ -131,7 +131,7 @@ export async function deleteEnvironment(instance, project, environment) {
     // response if successful is a JSON {"result":"success"}
     const { stdout } = await execLagoonCommand(command, `Delete Environment ${environment} from ${project}`);
     const response = JSON.parse(stdout);
-    if (response.result === "success") {
+    if (response.result === 'success') {
       console.log(chalk.green(`Environment ${environment} deleted successfully`));
       return true;
     } else {
@@ -164,9 +164,7 @@ export function gitUrlToGithubUrl(gitUrl) {
   if (gitUrl.startsWith('git@github.com:')) {
     const path = gitUrl.replace('git@github.com:', '').replace('.git', '');
     return `https://github.com/${path}`;
-  }
-  // Handle HTTPS URLs like https://github.com/org/repo.git
-  else if (gitUrl.includes('github.com')) {
+  } else if (gitUrl.includes('github.com')) {
     return gitUrl.replace('.git', '');
   }
   // Return null if not a GitHub URL
