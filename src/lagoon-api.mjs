@@ -215,21 +215,42 @@ export async function getGitBranches(gitUrl) {
     
     // Use git ls-remote to list all references (only the heads/branches)
     const command = `git ls-remote --heads ${gitUrl}`;
-    const { stdout } = await execAsync(command);
+    console.log(chalk.blue(`Executing: ${chalk.bold(command)}`));
     
-    // Parse the branch names from the output
-    const branches = stdout
-      .split('\n')
-      .filter(line => line.trim().length > 0)
-      .map(line => {
-        // Extract the branch name from lines like:
-        // d7b0a24b046d00b6aeac1280e4d1a74297551444	refs/heads/main
-        const match = line.match(/refs\/heads\/(.+)$/);
-        return match ? match[1] : null;
-      })
-      .filter(branch => branch !== null);
-    
-    return branches;
+    try {
+      const { stdout, stderr } = await execAsync(command);
+      
+      // Log any warnings from stderr
+      if (stderr) {
+        console.log(chalk.yellow(`Warning: ${stderr}`));
+      }
+      
+      // Parse the branch names from the output
+      const branches = stdout
+        .split('\n')
+        .filter(line => line.trim().length > 0)
+        .map(line => {
+          // Extract the branch name from lines like:
+          // d7b0a24b046d00b6aeac1280e4d1a74297551444	refs/heads/main
+          const match = line.match(/refs\/heads\/(.+)$/);
+          return match ? match[1] : null;
+        })
+        .filter(branch => branch !== null);
+      
+      // Log the number of branches found
+      console.log(chalk.green(`Found ${branches.length} branches in repository`));
+      
+      return branches;
+    } catch (error) {
+      // If the Git URL is using SSH, offer a hint about authentication
+      if (gitUrl.startsWith('git@') && error.message.includes('Permission denied')) {
+        throw new Error(`Authentication failed for ${gitUrl}. Please check your SSH key configuration.`);
+      } else if (error.message.includes('not found')) {
+        throw new Error(`Repository not found: ${gitUrl}. Please check if the URL is correct.`);
+      } else {
+        throw error;
+      }
+    }
   } catch (error) {
     logError('List Branches', `git ls-remote ${gitUrl}`, error);
     throw new Error(`Failed to get git branches: ${error.message}`);

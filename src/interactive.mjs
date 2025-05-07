@@ -13,9 +13,9 @@ import {
   extractPrNumber,
   getGitBranches,
   deployBranch
-} from './lagoon-api';
-import { logAction } from './logger';
-import { configureSshKey } from './lagoon-ssh-key-configurator';
+} from './lagoon-api.mjs';
+import { logAction } from './logger.mjs';
+import { configureSshKey } from './lagoon-ssh-key-configurator.mjs';
 
 // Register the autocomplete prompt with inquirer
 try {
@@ -518,27 +518,39 @@ async function deployBranchFlow(instance, project, projectDetails) {
       }
     });
 
-    // Allow user to select a branch using autocomplete
-    const { selectedBranch } = await inquirer.prompt([
-      {
-        type: 'autocomplete',
-        name: 'selectedBranch',
-        message: 'Select a branch to deploy:',
-        source: (answersSoFar, input = '') => {
-          return Promise.resolve(
-            sortedBranches.filter(branch =>
-              !input || branch.toLowerCase().includes(input.toLowerCase())
-            )
-          );
+    // Allow user to select a branch using autocomplete if available, or regular list if not
+    let selectedBranch;
+    
+    // Check if the autocomplete prompt is registered
+    if (inquirer.prompt.prompts.autocomplete) {
+      // Use autocomplete selection
+      const answer = await inquirer.prompt([
+        {
+          type: 'autocomplete',
+          name: 'branch',
+          message: 'Select a branch to deploy:',
+          source: (answersSoFar, input = '') => {
+            return Promise.resolve(
+              sortedBranches.filter(branch => 
+                !input || branch.toLowerCase().includes(input.toLowerCase())
+              )
+            );
+          }
         }
-      },
-      {
-        type: 'list',
-        name: 'selectedBranch',
-        message: 'Select a branch to deploy:',
-        choices: sortedBranches
-      }
-    ]);
+      ]);
+      selectedBranch = answer.branch;
+    } else {
+      // Fall back to regular list selection
+      const answer = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'branch',
+          message: 'Select a branch to deploy:',
+          choices: sortedBranches
+        }
+      ]);
+      selectedBranch = answer.branch;
+    }
 
     // Confirm deployment
     const { confirm } = await inquirer.prompt([
