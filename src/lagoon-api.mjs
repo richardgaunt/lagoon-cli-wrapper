@@ -266,8 +266,9 @@ export async function deployBranch(instance, project, branch) {
     }
     
     // Properly escape the branch name for use in command line
-    const escapedBranch = branch.replace(/"/g, '\\"');
-    
+    // More comprehensive escaping for shell safety
+    const escapedBranch = branch.replace(/["\\$`]/g, '\\$&');
+
     const command = `lagoon -l ${instance} -p ${project} deploy branch --branch "${escapedBranch}" --output-json`;
     const { stdout } = await execLagoonCommand(command, `Deploy Branch ${branch} to ${project}`);
 
