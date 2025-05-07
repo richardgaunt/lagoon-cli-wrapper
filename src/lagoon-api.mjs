@@ -260,12 +260,15 @@ export async function getGitBranches(gitUrl) {
 // Deploy a branch to Lagoon
 export async function deployBranch(instance, project, branch) {
   try {
-    // Validate branch name to prevent command injection
-    if (!/^[a-zA-Z0-9_.-]+$/.test(branch)) {
-      throw new Error('Invalid branch name. Branch names must contain only alphanumeric characters, underscores, hyphens, and periods.');
+    // Validate branch name to prevent command injection - allow slashes in addition to other safe characters
+    if (!/^[a-zA-Z0-9_./\-]+$/.test(branch)) {
+      throw new Error('Invalid branch name. Branch names must contain only alphanumeric characters, slashes, underscores, hyphens, and periods.');
     }
-
-    const command = `lagoon -l ${instance} -p ${project} deploy branch --branch ${branch} --output-json`;
+    
+    // Properly escape the branch name for use in command line
+    const escapedBranch = branch.replace(/"/g, '\\"');
+    
+    const command = `lagoon -l ${instance} -p ${project} deploy branch --branch "${escapedBranch}" --output-json`;
     const { stdout } = await execLagoonCommand(command, `Deploy Branch ${branch} to ${project}`);
 
     // Parse the JSON response
