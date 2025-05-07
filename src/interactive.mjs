@@ -1,4 +1,3 @@
-import inquirer from 'inquirer';
 import chalk from 'chalk';
 import ora from 'ora';
 import {
@@ -14,12 +13,14 @@ import {
   getGitBranches,
   deployBranch
 } from './lagoon-api.mjs';
-import autocomplete from 'inquirer-autocomplete-prompt';
 import { logAction } from './logger.mjs';
 import { configureSshKey } from './lagoon-ssh-key-configurator.mjs';
 
-// Register the autocomplete prompt with inquirer
-inquirer.registerPrompt('autocomplete', autocomplete);
+// Import the modern inquirer prompts
+import { select } from '@inquirer/prompts';
+import { input } from '@inquirer/prompts';
+import { confirm } from '@inquirer/prompts';
+import { checkbox } from '@inquirer/prompts';
 
 /**
  * Starts the interactive Lagoon CLI session for managing projects and environments.
@@ -113,19 +114,15 @@ export async function startInteractiveMode() {
       }
     } catch (error) {
       console.error(chalk.red(`Error: ${error.message}`));
-      await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'continue',
-          message: 'Do you want to continue?',
-          default: true
-        }
-      ]).then(answers => {
-        if (!answers.continue) {
-          exit = true;
-          logAction('Exit Application', 'N/A', 'User exited after error');
-        }
+      const continueSession = await confirm({
+        message: 'Do you want to continue?',
+        default: true
       });
+
+      if (!continueSession) {
+        exit = true;
+        logAction('Exit Application', 'N/A', 'User exited after error');
+      }
     }
   }
 
@@ -137,14 +134,13 @@ async function selectLagoonInstance() {
   const instances = await getLagoonInstances();
   spinner.stop();
 
-  const { instance } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'instance',
-      message: 'Select a Lagoon instance:',
-      choices: instances
-    }
-  ]);
+  const instance = await select({
+    message: 'Select a Lagoon instance:',
+    choices: instances.map(instance => ({
+      value: instance,
+      label: instance
+    }))
+  });
 
   return instance;
 }
@@ -160,19 +156,13 @@ async function selectProjectWithDetails(instance) {
   const projectsWithDetails = await getProjectsWithDetails(instance);
   spinner.stop();
 
-  const projectChoices = projectsWithDetails.map(project => ({
-    name: project.projectname,
-    value: project.projectname
-  }));
-
-  const { project } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'project',
-      message: 'Select a project:',
-      choices: projectChoices
-    }
-  ]);
+  const project = await select({
+    message: 'Select a project:',
+    choices: projectsWithDetails.map(project => ({
+      value: project.projectname,
+      label: project.projectname
+    }))
+  });
 
   const projectDetails = projectsWithDetails.find(p => p.projectname === project);
 
@@ -193,25 +183,21 @@ async function showMainMenu(instance, project) {
   console.log(chalk.blue(`\nCurrent Instance: ${chalk.bold(instance)}`));
   console.log(chalk.blue(`Current Project: ${chalk.bold(project)}\n`));
 
-  const { action } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'action',
-      message: 'What would you like to do?',
-      choices: [
-        { name: 'List Environments', value: 'listEnvironments' },
-        { name: 'List Users', value: 'listUsers' },
-        { name: 'Delete Environment', value: 'deleteEnvironment' },
-        { name: 'Generate Login Link', value: 'generateLoginLink' },
-        { name: 'Clear Drupal Cache', value: 'clearCache' },
-        { name: 'Deploy Branch', value: 'deployBranch' },
-        { name: 'Change Project', value: 'changeProject' },
-        { name: 'Change Instance', value: 'changeInstance' },
-        { name: 'Configure User SSH Key', value: 'configureUserSshKey' },
-        { name: 'Exit', value: 'exit' }
-      ]
-    }
-  ]);
+  const action = await select({
+    message: 'What would you like to do?',
+    choices: [
+      { value: 'listEnvironments', label: 'List Environments' },
+      { value: 'listUsers', label: 'List Users' },
+      { value: 'deleteEnvironment', label: 'Delete Environment' },
+      { value: 'generateLoginLink', label: 'Generate Login Link' },
+      { value: 'clearCache', label: 'Clear Drupal Cache' },
+      { value: 'deployBranch', label: 'Deploy Branch' },
+      { value: 'changeProject', label: 'Change Project' },
+      { value: 'changeInstance', label: 'Change Instance' },
+      { value: 'configureUserSshKey', label: 'Configure User SSH Key' },
+      { value: 'exit', label: 'Exit' }
+    ]
+  });
 
   return action;
 }
@@ -232,13 +218,9 @@ async function listEnvironments(instance, project, githubBaseUrl) {
     }
   });
 
-  await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'continue',
-      message: 'Press Enter to continue...'
-    }
-  ]);
+  await input({
+    message: 'Press Enter to continue...',
+  });
 }
 
 async function listUsers(instance, project) {
@@ -251,13 +233,9 @@ async function listUsers(instance, project) {
     console.log(`- ${user}`);
   });
 
-  await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'continue',
-      message: 'Press Enter to continue...'
-    }
-  ]);
+  await input({
+    message: 'Press Enter to continue...',
+  });
 }
 
 async function deleteEnvironmentFlow(instance, project, githubBaseUrl) {
@@ -275,13 +253,9 @@ async function deleteEnvironmentFlow(instance, project, githubBaseUrl) {
 
   if (eligibleEnvironments.length === 0) {
     console.log(chalk.yellow('\nNo eligible environments to delete.'));
-    await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'continue',
-        message: 'Press Enter to continue...'
-      }
-    ]);
+    await input({
+      message: 'Press Enter to continue...'
+    });
     return;
   }
 
@@ -301,40 +275,35 @@ async function deleteEnvironmentFlow(instance, project, githubBaseUrl) {
   // Create choices with PR information for selection
   const choices = eligibleEnvironments.map(env => {
     const prNumber = extractPrNumber(env);
-    const prUrl = `${githubBaseUrl}/pull/${prNumber}`;
     if (prNumber && githubBaseUrl) {
+      const prUrl = `${githubBaseUrl}/pull/${prNumber}`;
       return {
-        name: `${env} (PR #${prUrl})`,
-        value: env
+        value: env,
+        label: `${env} (PR #${prNumber}: ${prUrl})`
       };
     }
-    return env;
+    return {
+      value: env,
+      label: env
+    };
   });
 
-  const { selectedEnvironments } = await inquirer.prompt([
-    {
-      type: 'checkbox',
-      name: 'selectedEnvironments',
-      message: 'Select environments to delete:',
-      choices: choices
-    }
-  ]);
+  const selectedEnvironments = await checkbox({
+    message: 'Select environments to delete:',
+    choices: choices
+  });
 
   if (selectedEnvironments.length === 0) {
     console.log(chalk.yellow('\nNo environments selected.'));
     return;
   }
 
-  const { confirm } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'confirm',
-      message: `Are you sure you want to delete the following environment(s)?:\n${selectedEnvironments.map(env => `  - ${env}`).join('\n')}\n\nTotal: ${selectedEnvironments.length} environment(s)`,
-      default: false
-    }
-  ]);
+  const userConfirm = await confirm({
+    message: `Are you sure you want to delete the following environment(s)?:\n${selectedEnvironments.map(env => `  - ${env}`).join('\n')}\n\nTotal: ${selectedEnvironments.length} environment(s)`,
+    default: false
+  });
 
-  if (confirm) {
+  if (userConfirm) {
     for (const env of selectedEnvironments) {
       const spinner = ora(`Deleting environment ${env}...`).start();
       try {
@@ -348,13 +317,9 @@ async function deleteEnvironmentFlow(instance, project, githubBaseUrl) {
     console.log(chalk.yellow('\nDeletion cancelled.'));
   }
 
-  await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'continue',
-      message: 'Press Enter to continue...'
-    }
-  ]);
+  await input({
+    message: 'Press Enter to continue...'
+  });
 }
 
 async function generateLoginLinkFlow(instance, project, githubBaseUrl) {
@@ -370,13 +335,9 @@ async function generateLoginLinkFlow(instance, project, githubBaseUrl) {
 
   if (eligibleEnvironments.length === 0) {
     console.log(chalk.yellow('\nNo eligible environments for login link generation.'));
-    await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'continue',
-        message: 'Press Enter to continue...'
-      }
-    ]);
+    await input({
+      message: 'Press Enter to continue...'
+    });
     return;
   }
 
@@ -385,21 +346,20 @@ async function generateLoginLinkFlow(instance, project, githubBaseUrl) {
     const prNumber = extractPrNumber(env);
     if (prNumber && githubBaseUrl) {
       return {
-        name: `${env} (PR #${prNumber})`,
-        value: env
+        value: env,
+        label: `${env} (PR #${prNumber})`
       };
     }
-    return env;
+    return {
+      value: env,
+      label: env
+    };
   });
 
-  const { selectedEnvironment } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'selectedEnvironment',
-      message: 'Select an environment to generate a login link:',
-      choices: choices
-    }
-  ]);
+  const selectedEnvironment = await select({
+    message: 'Select an environment to generate a login link:',
+    choices: choices
+  });
 
   const spinner2 = ora(`Generating login link for ${selectedEnvironment}...`).start();
   try {
@@ -412,13 +372,9 @@ async function generateLoginLinkFlow(instance, project, githubBaseUrl) {
     spinner2.fail(`Failed to generate login link: ${error.message}`);
   }
 
-  await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'continue',
-      message: 'Press Enter to continue...'
-    }
-  ]);
+  await input({
+    message: 'Press Enter to continue...'
+  });
 }
 
 /**
@@ -434,13 +390,9 @@ async function clearCacheFlow(instance, project, githubBaseUrl) {
 
   if (allEnvironments.length === 0) {
     console.log(chalk.yellow('\nNo environments found.'));
-    await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'continue',
-        message: 'Press Enter to continue...'
-      }
-    ]);
+    await input({
+      message: 'Press Enter to continue...'
+    });
     return;
   }
 
@@ -449,21 +401,20 @@ async function clearCacheFlow(instance, project, githubBaseUrl) {
     const prNumber = extractPrNumber(env);
     if (prNumber && githubBaseUrl) {
       return {
-        name: `${env} (PR #${prNumber})`,
-        value: env
+        value: env,
+        label: `${env} (PR #${prNumber})`
       };
     }
-    return env;
+    return {
+      value: env,
+      label: env
+    };
   });
 
-  const { selectedEnvironment } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'selectedEnvironment',
-      message: 'Select an environment to clear cache:',
-      choices: choices
-    }
-  ]);
+  const selectedEnvironment = await select({
+    message: 'Select an environment to clear cache:',
+    choices: choices
+  });
 
   const spinner2 = ora(`Clearing cache for ${selectedEnvironment}...`).start();
   try {
@@ -476,13 +427,9 @@ async function clearCacheFlow(instance, project, githubBaseUrl) {
     spinner2.fail(`Failed to clear cache: ${error.message}`);
   }
 
-  await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'continue',
-      message: 'Press Enter to continue...'
-    }
-  ]);
+  await input({
+    message: 'Press Enter to continue...'
+  });
 }
 
 /**
@@ -499,13 +446,9 @@ async function deployBranchFlow(instance, project, projectDetails) {
   // Check if project has a git URL
   if (!projectDetails || !projectDetails.giturl) {
     console.log(chalk.yellow('\nThis project does not have a valid Git URL configured.'));
-    await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'continue',
-        message: 'Press Enter to continue...'
-      }
-    ]);
+    await input({
+      message: 'Press Enter to continue...'
+    });
     return;
   }
 
@@ -519,13 +462,9 @@ async function deployBranchFlow(instance, project, projectDetails) {
 
     if (branches.length === 0) {
       console.log(chalk.yellow('\nNo branches found in the git repository.'));
-      await inquirer.prompt([
-        {
-          type: 'input',
-          name: 'continue',
-          message: 'Press Enter to continue...'
-        }
-      ]);
+      await input({
+        message: 'Press Enter to continue...'
+      });
       return;
     }
 
@@ -546,38 +485,33 @@ async function deployBranchFlow(instance, project, projectDetails) {
       }
     });
 
-    // Allow user to select a branch using autocomplete if available, or regular list if not
-    let selectedBranch;
+    // Create choices array for the select prompt
+    const choices = sortedBranches.map(branch => ({
+      value: branch,
+      label: branch
+    }));
 
-    // Check if the autocomplete prompt is registered
-    if (inquirer.prompt.prompts.autocomplete) {
-      // Use autocomplete selection
-      const answer = await inquirer.prompt([
-        {
-          type: 'autocomplete',
-          name: 'branch',
-          message: 'Select a branch to deploy:',
-          source: (answersSoFar, input = '') => {
-            return Promise.resolve(
-              sortedBranches.filter(branch =>
-                !input || branch.toLowerCase().includes(input.toLowerCase())
-              )
-            );
-          }
-        }
-      ]);
-      selectedBranch = answer.branch;
-    } else {
-      // Fall back to regular list selection
-      const answer = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'branch',
-          message: 'Select a branch to deploy:',
-          choices: sortedBranches
-        }
-      ]);
-      selectedBranch = answer.branch;
+    // Allow user to select a branch
+    const selectedBranch = await select({
+      message: 'Select a branch to deploy:',
+      choices: choices,
+      // Modern select doesn't have autocomplete but we can set reasonable pagination
+      loop: true,
+      pageSize: 10
+    });
+
+    // Confirm the selection
+    const userConfirm = await confirm({
+      message: `Are you sure you want to deploy branch ${chalk.bold(selectedBranch)} to project ${chalk.bold(project)}?`,
+      default: false
+    });
+
+    if (!userConfirm) {
+      console.log(chalk.yellow('\nDeployment cancelled.'));
+      await input({
+        message: 'Press Enter to continue...'
+      });
+      return;
     }
 
     // Deploy the branch
@@ -597,11 +531,7 @@ async function deployBranchFlow(instance, project, projectDetails) {
     spinner.fail(`Failed to fetch branches: ${error.message}`);
   }
 
-  await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'continue',
-      message: 'Press Enter to continue...'
-    }
-  ]);
+  await input({
+    message: 'Press Enter to continue...'
+  });
 }
