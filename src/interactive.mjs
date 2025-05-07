@@ -30,6 +30,11 @@ try {
  *
  * Guides the user through selecting a Lagoon instance and project, then presents a menu of actions such as listing environments or users, deleting environments, generating login links, clearing Drupal cache, deploying branches, configuring SSH keys, and changing selections. Handles errors gracefully and logs key actions throughout the session.
  */
+/**
+ * Launches the interactive Lagoon CLI wrapper, allowing users to manage projects and environments through a guided command-line interface.
+ *
+ * Presents menus for selecting Lagoon instances and projects, and provides options to list environments or users, delete environments, generate login links, clear Drupal cache, configure SSH keys, and change selections. Handles errors gracefully and logs major actions throughout the session.
+ */
 export async function startInteractiveMode() {
   console.log(chalk.green('Welcome to the Lagoon CLI Wrapper!'));
   logAction('Application Start', 'N/A', 'Interactive mode started');
