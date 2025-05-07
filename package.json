@@ -2,10 +2,9 @@
   "name": "lagoon-cli-wrapper",
   "version": "1.0.0",
   "description": "A CLI wrapper for Lagoon CLI",
-  "main": "index.js",
-  "type": "module",
+  "main": "index.mjs",
   "scripts": {
-    "start": "node index.js",
+    "start": "node index.mjs",
     "lint": "eslint . --ext .mjs",
     "lint:fix": "eslint . --ext .mjs --fix",
     "lint:report": "eslint . --ext .mjs -f json -o eslint-report.json"
@@ -24,7 +23,11 @@
     "eslint-plugin-n": "^17.17.0",
     "globals": "^16.1.0",
     "inquirer": "^9.2.12",
+    "inquirer-autocomplete-prompt": "^3.0.1",
     "js-yaml": "^4.1.0",
     "ora": "^7.0.1"
+  },
+  "engine": {
+    "node": ">22"
   }
 }

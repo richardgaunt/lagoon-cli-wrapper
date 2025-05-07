@@ -48,6 +48,7 @@ This will start the interactive mode, which will guide you through:
    - Deleting environments (except protected ones)
    - Generating login links for environments
    - Clearing Drupal caches
+   - Deploying branches to environments
    - Viewing GitHub PR links for PR environments
 
 ## Features
@@ -58,6 +59,8 @@ This will start the interactive mode, which will guide you through:
 - GitHub PR integration for PR environments
 - One-click login link generation for Drupal environments
 - Quick Drupal cache clearing for any environment
+- Branch deployment with autocomplete selection
+- SSH key configuration for Lagoon authentication
 - Comprehensive logging of all operations
 - Extensible architecture for adding new commands
 
@@ -91,6 +94,17 @@ The CLI can clear Drupal caches on any environment:
 - Works on all environments including production and master
 - Executes the `drush cr` command on the selected environment
 - Shows the command output in the terminal
+
+## Branch Deployment
+
+The CLI can deploy any branch from a project's git repository:
+- Automatically fetches and lists all available branches with autocomplete search
+- Prioritizes main branches (main, master, develop) at the top of the list
+- Initiates deployment of the selected branch to the Lagoon environment
+- Provides real-time feedback about the deployment status
+- Validates branch names to prevent command injection
+
+Note: Branch deployment is asynchronous and may take several minutes to complete. You can check the status in the Lagoon UI.
 
 ## Logging
 

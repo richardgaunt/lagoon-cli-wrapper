@@ -10,15 +10,31 @@ import {
   generateLoginLink,
   clearDrupalCache,
   gitUrlToGithubUrl,
-  extractPrNumber
-} from './lagoon-api';
-import { logAction } from './logger';
-import { configureSshKey } from './lagoon-ssh-key-configurator';
+  extractPrNumber,
+  getGitBranches,
+  deployBranch
+} from './lagoon-api.mjs';
+import autocomplete from 'inquirer-autocomplete-prompt';
+import { logAction } from './logger.mjs';
+import { configureSshKey } from './lagoon-ssh-key-configurator.mjs';
+
+// Register the autocomplete prompt with inquirer
+inquirer.registerPrompt('autocomplete', autocomplete);
 
 /**
- * Launches the interactive Lagoon CLI wrapper, allowing users to manage projects and environments through a guided command-line interface.
+ * Starts the interactive Lagoon CLI session for managing projects and environments.
  *
- * Presents menus for selecting Lagoon instances and projects, and provides options to list environments or users, delete environments, generate login links, clear Drupal cache, configure SSH keys, and change selections. Handles errors gracefully and logs major actions throughout the session.
+ * Guides the user through selecting a Lagoon instance and project, then presents a menu of actions such as listing
+ * environments or users, deleting environments, generating login links, clearing Drupal cache, deploying branches,
+ * configuring SSH keys, and changing selections. Handles errors gracefully and logs key actions throughout the session.
+ */
+/**
+ * Launches the interactive Lagoon CLI wrapper, allowing users to manage projects and environments through a guided
+ * command-line interface.
+ *
+ * Presents menus for selecting Lagoon instances and projects, and provides options to list environments or users,
+ * delete environments, generate login links, clear Drupal cache, configure SSH keys, and change selections. Handles
+ * errors gracefully and logs major actions throughout the session.
  */
 export async function startInteractiveMode() {
   console.log(chalk.green('Welcome to the Lagoon CLI Wrapper!'));
@@ -70,6 +86,9 @@ export async function startInteractiveMode() {
           break;
         case 'clearCache':
           await clearCacheFlow(currentInstance, currentProject, githubBaseUrl);
+          break;
+        case 'deployBranch':
+          await deployBranchFlow(currentInstance, currentProject, currentProjectDetails);
           break;
         case 'configureUserSshKey':
           await configureSshKey(currentInstance, currentProject);
@@ -130,6 +149,12 @@ async function selectLagoonInstance() {
   return instance;
 }
 
+/**
+ * Prompts the user to select a project from the specified Lagoon instance and returns selected project's details.
+ *
+ * @param {string} instance - The Lagoon instance from which to load projects.
+ * @returns {{ projectName: string, projectDetails: object }} An object containing project's name & details.
+ */
 async function selectProjectWithDetails(instance) {
   const spinner = ora(`Loading projects for ${instance}...`).start();
   const projectsWithDetails = await getProjectsWithDetails(instance);
@@ -158,11 +183,11 @@ async function selectProjectWithDetails(instance) {
 }
 
 /**
- * Displays the main menu for the interactive CLI and prompts the user to select an action.
+ * Presents the main menu for the interactive CLI session and returns the user's selected action.
  *
- * @param {string} instance - The name of the currently selected Lagoon instance.
- * @param {string} project - The name of the currently selected project.
- * @returns {Promise<string>} The action selected by the user.
+ * @param {string} instance - The currently selected Lagoon instance.
+ * @param {string} project - The currently selected project.
+ * @returns {Promise<string>} The action chosen by the user from the menu.
  */
 async function showMainMenu(instance, project) {
   console.log(chalk.blue(`\nCurrent Instance: ${chalk.bold(instance)}`));
@@ -179,6 +204,7 @@ async function showMainMenu(instance, project) {
         { name: 'Delete Environment', value: 'deleteEnvironment' },
         { name: 'Generate Login Link', value: 'generateLoginLink' },
         { name: 'Clear Drupal Cache', value: 'clearCache' },
+        { name: 'Deploy Branch', value: 'deployBranch' },
         { name: 'Change Project', value: 'changeProject' },
         { name: 'Change Instance', value: 'changeInstance' },
         { name: 'Configure User SSH Key', value: 'configureUserSshKey' },
@@ -395,6 +421,12 @@ async function generateLoginLinkFlow(instance, project, githubBaseUrl) {
   ]);
 }
 
+/**
+ * Guides the user through clearing the Drupal cache for a selected environment in a Lagoon project.
+ *
+ * Prompts the user to choose an environment, attempts to clear its Drupal cache, and displays the result or any
+ * errors encountered.
+ */
 async function clearCacheFlow(instance, project, githubBaseUrl) {
   const spinner = ora(`Loading environments for ${project}...`).start();
   const allEnvironments = await getEnvironments(instance, project);
@@ -442,6 +474,127 @@ async function clearCacheFlow(instance, project, githubBaseUrl) {
     console.log(chalk.cyan(result || 'Cache cleared successfully.'));
   } catch (error) {
     spinner2.fail(`Failed to clear cache: ${error.message}`);
+  }
+
+  await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'continue',
+      message: 'Press Enter to continue...'
+    }
+  ]);
+}
+
+/**
+ * Guides the user through deploying a selected Git branch for a Lagoon project via the interactive CLI.
+ *
+ * Prompts the user to select a branch from the project's Git repository, confirms deployment, and initiates the
+ * deployment process. Provides feedback on success or failure and informs the user that deployment is asynchronous.
+ *
+ * @param {string} instance - The Lagoon instance identifier.
+ * @param {string} project - The Lagoon project name.
+ * @param {object} projectDetails - Details of the Lagoon project, including the Git URL.
+ */
+async function deployBranchFlow(instance, project, projectDetails) {
+  // Check if project has a git URL
+  if (!projectDetails || !projectDetails.giturl) {
+    console.log(chalk.yellow('\nThis project does not have a valid Git URL configured.'));
+    await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'continue',
+        message: 'Press Enter to continue...'
+      }
+    ]);
+    return;
+  }
+
+  console.log(chalk.blue(`\nFetching branches from ${chalk.bold(projectDetails.giturl)}...`));
+
+  const spinner = ora('Loading branches...').start();
+  try {
+    // Get branches from the git repository
+    const branches = await getGitBranches(projectDetails.giturl);
+    spinner.succeed(`Found ${branches.length} branches.`);
+
+    if (branches.length === 0) {
+      console.log(chalk.yellow('\nNo branches found in the git repository.'));
+      await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'continue',
+          message: 'Press Enter to continue...'
+        }
+      ]);
+      return;
+    }
+
+    // Sort the branches to put main/master/develop first, then the rest alphabetically
+    const sortedBranches = branches.sort((a, b) => {
+      const priority = ['main', 'master', 'develop'];
+      const aIndex = priority.indexOf(a);
+      const bIndex = priority.indexOf(b);
+
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      } else if (aIndex !== -1) {
+        return -1;
+      } else if (bIndex !== -1) {
+        return 1;
+      } else {
+        return a.localeCompare(b);
+      }
+    });
+
+    // Allow user to select a branch using autocomplete if available, or regular list if not
+    let selectedBranch;
+
+    // Check if the autocomplete prompt is registered
+    if (inquirer.prompt.prompts.autocomplete) {
+      // Use autocomplete selection
+      const answer = await inquirer.prompt([
+        {
+          type: 'autocomplete',
+          name: 'branch',
+          message: 'Select a branch to deploy:',
+          source: (answersSoFar, input = '') => {
+            return Promise.resolve(
+              sortedBranches.filter(branch =>
+                !input || branch.toLowerCase().includes(input.toLowerCase())
+              )
+            );
+          }
+        }
+      ]);
+      selectedBranch = answer.branch;
+    } else {
+      // Fall back to regular list selection
+      const answer = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'branch',
+          message: 'Select a branch to deploy:',
+          choices: sortedBranches
+        }
+      ]);
+      selectedBranch = answer.branch;
+    }
+
+    // Deploy the branch
+    const spinner2 = ora(`Deploying branch ${selectedBranch}...`).start();
+    try {
+      const result = await deployBranch(instance, project, selectedBranch);
+      spinner2.succeed('Deployment initiated successfully.');
+
+      console.log(chalk.green('\nDeployment Status:'));
+      console.log(chalk.cyan(result.message || 'Branch deployment initiated.'));
+      console.log(chalk.blue('\nNote: The deployment process runs asynchronously and may take several minutes to complete.'));
+      console.log(chalk.blue('You can check the status of the deployment in the Lagoon UI.'));
+    } catch (error) {
+      spinner2.fail(`Failed to deploy branch: ${error.message}`);
+    }
+  } catch (error) {
+    spinner.fail(`Failed to fetch branches: ${error.message}`);
   }
 
   await inquirer.prompt([

@@ -29,5 +29,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Checkout Github issues for outstanding issues
 - Implement each issue in a feature branch based on main
+- Commit messages are written in past tense and are 1 line to explain what has been fixed, added, enhanced.
 - Create a pull request with changes using the PR template located in `.github/PULL_REQUEST_TEMPLATE.md`
 - Add tests as required to prove the work

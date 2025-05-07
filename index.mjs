@@ -1,6 +1,6 @@
 
 import { program } from 'commander';
-import { startInteractiveMode } from './src/interactive';
+import { startInteractiveMode } from './src/interactive.mjs';
 
 program
   .name('lagoon-wrapper')
