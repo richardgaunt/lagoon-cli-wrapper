@@ -2,8 +2,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import yaml from 'js-yaml';
-import inquirer from 'inquirer';
 import chalk from 'chalk';
+import { select } from '@inquirer/prompts';
 import { execLagoonCommand } from './lagoon-api.mjs';
 import { logAction, logError } from './logger.mjs';
 
@@ -83,17 +83,19 @@ export async function configureSshKey(instanceName) {
     }
 
     // Add option to cancel
-    sshKeys.push({ name: 'Cancel', value: null });
+    sshKeys.push({ 
+      label: 'Cancel', 
+      value: null 
+    });
 
     // Prompt user to select an SSH key
-    const { sshKey } = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'sshKey',
-        message: 'Select an SSH key:',
-        choices: sshKeys
-      }
-    ]);
+    const sshKey = await select({
+      message: 'Select an SSH key:',
+      choices: sshKeys.map(key => ({
+        value: key.value,
+        label: key.name || key.label || key.value
+      }))
+    });
 
     // If user cancels, return
     if (!sshKey) {
