@@ -114,7 +114,18 @@ export async function getUsers(instance, project) {
   }
 }
 
-// Delete an environment
+/**
+ * Deletes a Lagoon environment unless it is protected.
+ *
+ * Throws an error if the environment is protected (such as 'production', 'master', 'develop', or names starting with 'project/'). Executes the Lagoon CLI to delete the specified environment and returns true if successful.
+ *
+ * @param {string} instance - The Lagoon instance name.
+ * @param {string} project - The project name.
+ * @param {string} environment - The environment name to delete.
+ * @returns {boolean} True if the environment was deleted successfully.
+ *
+ * @throws {Error} If the environment is protected or if the deletion fails.
+ */
 export async function deleteEnvironment(instance, project, environment) {
   // Check if environment is protected
   if (
@@ -158,7 +169,12 @@ export async function generateLoginLink(instance, project, environment) {
   }
 }
 
-// Helper function to convert git URL to GitHub URL
+/**
+ * Converts a Git SSH or HTTPS URL to a standard GitHub HTTPS URL without the `.git` suffix.
+ *
+ * @param {string} gitUrl - The Git repository URL to convert.
+ * @returns {string|null} The corresponding GitHub HTTPS URL, or {@code null} if the input is not a GitHub URL.
+ */
 export function gitUrlToGithubUrl(gitUrl) {
   // Handle SSH URLs like git@github.com:org/repo.git
   if (gitUrl.startsWith('git@github.com:')) {

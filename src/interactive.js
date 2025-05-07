@@ -15,6 +15,11 @@ import {
 import { logAction } from './logger';
 import { configureSshKey } from './lagoon-ssh-key-configurator';
 
+/**
+ * Launches the interactive Lagoon CLI wrapper, allowing users to manage projects and environments through a guided command-line interface.
+ *
+ * Presents menus for selecting Lagoon instances and projects, and provides options to list environments or users, delete environments, generate login links, clear Drupal cache, configure SSH keys, and change selections. Handles errors gracefully and logs major actions throughout the session.
+ */
 export async function startInteractiveMode() {
   console.log(chalk.green('Welcome to the Lagoon CLI Wrapper!'));
   logAction('Application Start', 'N/A', 'Interactive mode started');
@@ -152,6 +157,13 @@ async function selectProjectWithDetails(instance) {
   };
 }
 
+/**
+ * Displays the main menu for the interactive CLI and prompts the user to select an action.
+ *
+ * @param {string} instance - The name of the currently selected Lagoon instance.
+ * @param {string} project - The name of the currently selected project.
+ * @returns {Promise<string>} The action selected by the user.
+ */
 async function showMainMenu(instance, project) {
   console.log(chalk.blue(`\nCurrent Instance: ${chalk.bold(instance)}`));
   console.log(chalk.blue(`Current Project: ${chalk.bold(project)}\n`));
