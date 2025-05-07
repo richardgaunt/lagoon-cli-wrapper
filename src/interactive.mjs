@@ -14,26 +14,27 @@ import {
   getGitBranches,
   deployBranch
 } from './lagoon-api.mjs';
+import autocomplete from 'inquirer-autocomplete-prompt';
 import { logAction } from './logger.mjs';
 import { configureSshKey } from './lagoon-ssh-key-configurator.mjs';
 
 // Register the autocomplete prompt with inquirer
-try {
-  const autocompletePrompt = (await import('inquirer-autocomplete-prompt')).default;
-  inquirer.registerPrompt('autocomplete', autocompletePrompt);
-} catch (error) {
-  console.log(chalk.yellow('Autocomplete prompt not available, falling back to standard list selection.'));
-}
+inquirer.registerPrompt('autocomplete', autocomplete);
 
 /**
  * Starts the interactive Lagoon CLI session for managing projects and environments.
  *
- * Guides the user through selecting a Lagoon instance and project, then presents a menu of actions such as listing environments or users, deleting environments, generating login links, clearing Drupal cache, deploying branches, configuring SSH keys, and changing selections. Handles errors gracefully and logs key actions throughout the session.
+ * Guides the user through selecting a Lagoon instance and project, then presents a menu of actions such as listing
+ * environments or users, deleting environments, generating login links, clearing Drupal cache, deploying branches,
+ * configuring SSH keys, and changing selections. Handles errors gracefully and logs key actions throughout the session.
  */
 /**
- * Launches the interactive Lagoon CLI wrapper, allowing users to manage projects and environments through a guided command-line interface.
+ * Launches the interactive Lagoon CLI wrapper, allowing users to manage projects and environments through a guided
+ * command-line interface.
  *
- * Presents menus for selecting Lagoon instances and projects, and provides options to list environments or users, delete environments, generate login links, clear Drupal cache, configure SSH keys, and change selections. Handles errors gracefully and logs major actions throughout the session.
+ * Presents menus for selecting Lagoon instances and projects, and provides options to list environments or users,
+ * delete environments, generate login links, clear Drupal cache, configure SSH keys, and change selections. Handles
+ * errors gracefully and logs major actions throughout the session.
  */
 export async function startInteractiveMode() {
   console.log(chalk.green('Welcome to the Lagoon CLI Wrapper!'));
@@ -149,10 +150,10 @@ async function selectLagoonInstance() {
 }
 
 /**
- * Prompts the user to select a project from the specified Lagoon instance and returns the selected project's name and details.
+ * Prompts the user to select a project from the specified Lagoon instance and returns selected project's details.
  *
  * @param {string} instance - The Lagoon instance from which to load projects.
- * @returns {{ projectName: string, projectDetails: object }} An object containing the selected project's name and its details.
+ * @returns {{ projectName: string, projectDetails: object }} An object containing project's name & details.
  */
 async function selectProjectWithDetails(instance) {
   const spinner = ora(`Loading projects for ${instance}...`).start();
@@ -423,7 +424,8 @@ async function generateLoginLinkFlow(instance, project, githubBaseUrl) {
 /**
  * Guides the user through clearing the Drupal cache for a selected environment in a Lagoon project.
  *
- * Prompts the user to choose an environment, attempts to clear its Drupal cache, and displays the result or any errors encountered.
+ * Prompts the user to choose an environment, attempts to clear its Drupal cache, and displays the result or any
+ * errors encountered.
  */
 async function clearCacheFlow(instance, project, githubBaseUrl) {
   const spinner = ora(`Loading environments for ${project}...`).start();
@@ -486,7 +488,8 @@ async function clearCacheFlow(instance, project, githubBaseUrl) {
 /**
  * Guides the user through deploying a selected Git branch for a Lagoon project via the interactive CLI.
  *
- * Prompts the user to select a branch from the project's Git repository, confirms deployment, and initiates the deployment process. Provides feedback on success or failure and informs the user that deployment is asynchronous.
+ * Prompts the user to select a branch from the project's Git repository, confirms deployment, and initiates the
+ * deployment process. Provides feedback on success or failure and informs the user that deployment is asynchronous.
  *
  * @param {string} instance - The Lagoon instance identifier.
  * @param {string} project - The Lagoon project name.
