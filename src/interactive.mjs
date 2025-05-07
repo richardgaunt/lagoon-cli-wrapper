@@ -118,7 +118,7 @@ export async function startInteractiveMode() {
         message: 'Do you want to continue?',
         default: true
       });
-      
+
       if (!continueSession) {
         exit = true;
         logAction('Exit Application', 'N/A', 'User exited after error');
@@ -490,7 +490,7 @@ async function deployBranchFlow(instance, project, projectDetails) {
       value: branch,
       label: branch
     }));
-    
+
     // Allow user to select a branch
     const selectedBranch = await select({
       message: 'Select a branch to deploy:',
@@ -499,13 +499,13 @@ async function deployBranchFlow(instance, project, projectDetails) {
       loop: true,
       pageSize: 10
     });
-    
+
     // Confirm the selection
     const userConfirm = await confirm({
       message: `Are you sure you want to deploy branch ${chalk.bold(selectedBranch)} to project ${chalk.bold(project)}?`,
       default: false
     });
-    
+
     if (!userConfirm) {
       console.log(chalk.yellow('\nDeployment cancelled.'));
       await input({

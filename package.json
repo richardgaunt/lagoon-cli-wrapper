@@ -23,8 +23,6 @@
     "eslint": "^9.24.0",
     "eslint-plugin-n": "^17.17.0",
     "globals": "^16.1.0",
-    "inquirer": "^9.2.12",
-    "inquirer-autocomplete-prompt": "^3.0.1",
     "js-yaml": "^4.1.0",
     "ora": "^7.0.1"
   },

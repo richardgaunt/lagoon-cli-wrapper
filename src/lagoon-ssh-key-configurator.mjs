@@ -83,9 +83,9 @@ export async function configureSshKey(instanceName) {
     }
 
     // Add option to cancel
-    sshKeys.push({ 
-      label: 'Cancel', 
-      value: null 
+    sshKeys.push({
+      label: 'Cancel',
+      value: null
     });
 
     // Prompt user to select an SSH key
