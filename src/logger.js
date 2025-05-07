@@ -22,10 +22,11 @@ function getLogFilePath() {
 }
 
 /**
- * Log a message to the daily log file
- * @param {string} action - The action being performed in the CLI
- * @param {string} command - The Lagoon CLI command being executed
- * @param {string} [result] - Optional result of the command
+ * Appends an action entry with timestamp, action, command, and optional result to the current day's log file.
+ *
+ * @param {string} action - Description of the action performed.
+ * @param {string} command - The CLI command executed.
+ * @param {string} [result] - Optional result of the command.
  */
 export function logAction(action, command, result = null) {
   const timestamp = new Date().toISOString(); // ISO8601 timestamp
@@ -37,10 +38,11 @@ export function logAction(action, command, result = null) {
 }
 
 /**
- * Log an error to the daily log file
- * @param {string} action - The action being performed in the CLI
- * @param {string} command - The Lagoon CLI command being executed
- * @param {Error} error - The error that occurred
+ * Appends an error entry to the current day's log file with a timestamp, action, command, and error message.
+ *
+ * @param {string} action - Description of the action being performed.
+ * @param {string} command - The CLI command that was executed.
+ * @param {Error} error - The error encountered during execution.
  */
 export function logError(action, command, error) {
   const timestamp = new Date().toISOString(); // ISO8601 timestamp
