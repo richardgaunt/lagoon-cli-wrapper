@@ -212,19 +212,19 @@ export async function getGitBranches(gitUrl) {
     if (!gitUrl) {
       throw new Error('Git URL not provided or invalid');
     }
-    
+
     // Use git ls-remote to list all references (only the heads/branches)
     const command = `git ls-remote --heads ${gitUrl}`;
     console.log(chalk.blue(`Executing: ${chalk.bold(command)}`));
-    
+
     try {
       const { stdout, stderr } = await execAsync(command);
-      
+
       // Log any warnings from stderr
       if (stderr) {
         console.log(chalk.yellow(`Warning: ${stderr}`));
       }
-      
+
       // Parse the branch names from the output
       const branches = stdout
         .split('\n')
@@ -236,10 +236,10 @@ export async function getGitBranches(gitUrl) {
           return match ? match[1] : null;
         })
         .filter(branch => branch !== null);
-      
+
       // Log the number of branches found
       console.log(chalk.green(`Found ${branches.length} branches in repository`));
-      
+
       return branches;
     } catch (error) {
       // If the Git URL is using SSH, offer a hint about authentication
@@ -264,7 +264,7 @@ export async function deployBranch(instance, project, branch) {
     if (!/^[a-zA-Z0-9_./\-]+$/.test(branch)) {
       throw new Error('Invalid branch name. Branch names must contain only alphanumeric characters, slashes, underscores, hyphens, and periods.');
     }
-    
+
     // Properly escape the branch name for use in command line
     // More comprehensive escaping for shell safety
     const escapedBranch = branch.replace(/["\\$`]/g, '\\$&');
