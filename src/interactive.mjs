@@ -17,10 +17,7 @@ import { logAction } from './logger.mjs';
 import { configureSshKey } from './lagoon-ssh-key-configurator.mjs';
 
 // Import the modern inquirer prompts
-import { select } from '@inquirer/prompts';
-import { input } from '@inquirer/prompts';
-import { confirm } from '@inquirer/prompts';
-import { checkbox } from '@inquirer/prompts';
+import { select, input, confirm, checkbox, search } from '@inquirer/prompts';
 
 /**
  * Starts the interactive Lagoon CLI session for managing projects and environments.
@@ -156,8 +153,9 @@ async function selectProjectWithDetails(instance) {
   const projectsWithDetails = await getProjectsWithDetails(instance);
   spinner.stop();
 
-  const project = await select({
-    message: 'Select a project:',
+  // Use search prompt with autocomplete functionality
+  const project = await search({
+    message: 'Select a project (type to search):',
     choices: projectsWithDetails.map(project => ({
       value: project.projectname,
       label: project.projectname
