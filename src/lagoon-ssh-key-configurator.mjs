@@ -4,7 +4,8 @@ import os from 'os';
 import yaml from 'js-yaml';
 import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
-import { execLagoonCommand } from './lagoon-api.mjs';
+import { execCommand } from './lagoon-api.mjs';
+import { LagoonCommand } from './command/index.mjs';
 import { logAction, logError } from './logger.mjs';
 
 // Path to the .lagoon.yml file
@@ -123,8 +124,12 @@ export async function configureSshKey(instanceName) {
 export async function refreshLagoonToken(instanceName) {
   try {
     console.log(chalk.blue(`Refreshing token for ${chalk.bold(instanceName)}...`));
-    const command = `lagoon -l ${instanceName} login`;
-    await execLagoonCommand(command, `Refresh Token for ${instanceName}`);
+    
+    const command = new LagoonCommand()
+      .withInstance(instanceName)
+      .login();
+    
+    await execCommand(command, `Refresh Token for ${instanceName}`);
     console.log(chalk.green(`Successfully refreshed token for ${chalk.bold(instanceName)}`));
     return true;
   } catch (error) {

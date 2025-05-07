@@ -1,29 +1,35 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import chalk from 'chalk';
+import { LagoonCommand, GitCommand, LagoonExecutor } from './command/index.mjs';
 import { logAction, logError } from './logger.mjs';
 
-const execAsync = promisify(exec);
+// Create a singleton executor with logger
+const executor = new LagoonExecutor({ logAction, logError });
 
-// Helper function to execute and log Lagoon commands
-export async function execLagoonCommand(command, action = 'Unknown Action') {
-  console.log(chalk.blue(`Executing: ${chalk.bold(command)}`));
-
-  try {
-    const result = await execAsync(command);
-    logAction(action, command, 'Success');
-    return result;
-  } catch (error) {
-    logError(action, command, error);
-    throw error;
-  }
+/**
+ * Executes a Lagoon command securely using the LagoonExecutor.
+ * 
+ * @param {LagoonCommand|GitCommand} command - The command to execute.
+ * @param {string} action - Description of the action for logging.
+ * @returns {Promise<Object>} - Promise resolving to { stdout, stderr }.
+ * @throws {Error} If the command execution fails.
+ */
+export async function execCommand(command, action = 'Unknown Action') {
+  return executor.execute(command, action);
 }
 
-// Get all Lagoon instances from the config
+/**
+ * Get all Lagoon instances from the config.
+ * 
+ * @returns {Promise<string[]>} Array of Lagoon instance names.
+ * @throws {Error} If the command fails or the response can't be parsed.
+ */
 export async function getLagoonInstances() {
   try {
-    const command = 'lagoon config list --output-json';
-    const { stdout } = await execLagoonCommand(command, 'List Lagoon Instances');
+    const command = new LagoonCommand()
+      .listConfigs()
+      .withJsonOutput();
+    
+    const { stdout } = await execCommand(command, 'List Lagoon Instances');
 
     // Parse the JSON output
     const configData = JSON.parse(stdout);
@@ -43,11 +49,21 @@ export async function getLagoonInstances() {
   }
 }
 
-// Get all projects for a Lagoon instance with full details
+/**
+ * Get all projects for a Lagoon instance with full details.
+ * 
+ * @param {string} instance - Lagoon instance name.
+ * @returns {Promise<Object[]>} Array of project details.
+ * @throws {Error} If the command fails or the response can't be parsed.
+ */
 export async function getProjectsWithDetails(instance) {
   try {
-    const command = `lagoon -l ${instance} list projects --output-json`;
-    const { stdout } = await execLagoonCommand(command, `List Projects for ${instance}`);
+    const command = new LagoonCommand()
+      .withInstance(instance)
+      .listProjects()
+      .withJsonOutput();
+    
+    const { stdout } = await execCommand(command, `List Projects for ${instance}`);
 
     // Parse the JSON output
     const projectsData = JSON.parse(stdout);
@@ -59,11 +75,22 @@ export async function getProjectsWithDetails(instance) {
   }
 }
 
-// Get all projects for a Lagoon instance
+/**
+ * Get all project names for a Lagoon instance.
+ * 
+ * @param {string} instance - Lagoon instance name.
+ * @returns {Promise<string[]>} Array of project names.
+ * @throws {Error} If the command fails or the response can't be parsed.
+ */
 export async function getProjects(instance) {
   try {
-    const command = `lagoon -l ${instance} list projects --output-json`;
-    const { stdout } = await execLagoonCommand(command, `List Projects for ${instance}`);
+    const command = new LagoonCommand()
+      .withInstance(instance)
+      .listProjects()
+      .withJsonOutput();
+    
+    const { stdout } = await execCommand(command, `List Projects for ${instance}`);
+    
     const projectsData = JSON.parse(stdout);
     return projectsData.data.map(project => project.projectname);
   } catch (error) {
@@ -71,11 +98,23 @@ export async function getProjects(instance) {
   }
 }
 
-// Get all environments for a project
+/**
+ * Get all environments for a project.
+ * 
+ * @param {string} instance - Lagoon instance name.
+ * @param {string} project - Project name.
+ * @returns {Promise<string[]>} Array of environment names.
+ * @throws {Error} If the command fails or the response can't be parsed.
+ */
 export async function getEnvironments(instance, project) {
   try {
-    const command = `lagoon -l ${instance} -p ${project} list environments --output-json`;
-    const { stdout } = await execLagoonCommand(command, `List Environments for ${project}`);
+    const command = new LagoonCommand()
+      .withInstance(instance)
+      .withProject(project)
+      .listEnvironments()
+      .withJsonOutput();
+    
+    const { stdout } = await execCommand(command, `List Environments for ${project}`);
 
     // Parse the JSON output
     const environmentsData = JSON.parse(stdout);
@@ -92,18 +131,19 @@ export async function getEnvironments(instance, project) {
 /**
  * Retrieves the list of usernames associated with a Lagoon project.
  *
- * Executes the Lagoon CLI to list all users for the specified project and parses the output to extract usernames.
- *
  * @param {string} instance - The Lagoon instance name.
  * @param {string} project - The project name.
  * @returns {Promise<string[]>} An array of usernames for the project.
- *
  * @throws {Error} If the command fails or output cannot be parsed.
  */
 export async function getUsers(instance, project) {
   try {
-    const command = `lagoon -l ${instance} -p ${project} list all-users`;
-    const { stdout } = await execLagoonCommand(command, `List Users for ${project}`);
+    const command = new LagoonCommand()
+      .withInstance(instance)
+      .withProject(project)
+      .listUsers();
+    
+    const { stdout } = await execCommand(command, `List Users for ${project}`);
     const lines = stdout.split('\n').filter(line => line.trim() !== '');
 
     // Skip the header line and extract user names
@@ -121,15 +161,10 @@ export async function getUsers(instance, project) {
 /**
  * Deletes a Lagoon environment unless it is protected.
  *
- * Prevents deletion of protected environments such as 'production', 'master', 'develop', or any environment whose
- * name starts with 'project/'. Executes the Lagoon CLI to delete the specified environment and returns true if the
- * operation succeeds.
- *
  * @param {string} instance - Name of the Lagoon instance.
  * @param {string} project - Name of the project.
  * @param {string} environment - Name of the environment to delete.
  * @returns {boolean} True if the environment was deleted successfully.
- *
  * @throws {Error} If the environment is protected or if the deletion fails.
  */
 export async function deleteEnvironment(instance, project, environment) {
@@ -144,9 +179,15 @@ export async function deleteEnvironment(instance, project, environment) {
   }
 
   try {
-    const command = `lagoon -l ${instance} -p ${project} delete environment --environment ${environment} --force --output-json`;
-    // response if successful is a JSON {"result":"success"}
-    const { stdout } = await execLagoonCommand(command, `Delete Environment ${environment} from ${project}`);
+    const command = new LagoonCommand()
+      .withInstance(instance)
+      .withProject(project)
+      .deleteEnvironment(environment)
+      .withForce()
+      .withJsonOutput();
+    
+    const { stdout } = await execCommand(command, `Delete Environment ${environment} from ${project}`);
+    
     const response = JSON.parse(stdout);
     if (response.result === 'success') {
       console.log(chalk.green(`Environment ${environment} deleted successfully`));
@@ -162,13 +203,10 @@ export async function deleteEnvironment(instance, project, environment) {
 /**
  * Generates a one-time login link for a specified Lagoon environment using Drush.
  *
- * Throws an error if the environment is protected (e.g., 'production' or 'master').
- *
  * @param {string} instance - The Lagoon instance name.
  * @param {string} project - The Lagoon project name.
  * @param {string} environment - The environment for which to generate the login link.
  * @returns {string} The generated one-time login URL.
- *
  * @throws {Error} If the environment is protected or if the login link generation fails.
  */
 export async function generateLoginLink(instance, project, environment) {
@@ -178,8 +216,13 @@ export async function generateLoginLink(instance, project, environment) {
   }
 
   try {
-    const command = `lagoon ssh -l ${instance} -p ${project} -e ${environment} -C "drush user:unblock --uid=1 && drush uli"`;
-    const { stdout } = await execLagoonCommand(command, `Generate Login Link for ${environment} in ${project}`);
+    const command = new LagoonCommand()
+      .withInstance(instance)
+      .withProject(project)
+      .withEnvironment(environment)
+      .ssh("drush user:unblock --uid=1 && drush uli");
+    
+    const { stdout } = await execCommand(command, `Generate Login Link for ${environment} in ${project}`);
     return stdout.trim();
   } catch (error) {
     throw new Error(`Failed to generate login link for environment ${environment}: ${error.message}`);
@@ -188,8 +231,6 @@ export async function generateLoginLink(instance, project, environment) {
 
 /**
  * Converts a GitHub SSH or HTTPS repository URL to a standard HTTPS URL without the `.git` suffix.
- *
- * Returns `null` if the input is not a GitHub URL.
  *
  * @param {string} gitUrl - The Git repository URL to convert.
  * @returns {string|null} The normalized GitHub HTTPS URL, or `null` if the input is not a GitHub URL.
@@ -206,7 +247,12 @@ export function gitUrlToGithubUrl(gitUrl) {
   return null;
 }
 
-// Helper function to extract PR number from environment name
+/**
+ * Helper function to extract PR number from environment name
+ * 
+ * @param {string} environmentName - Environment name to parse.
+ * @returns {string|null} PR number or null if not found.
+ */
 export function extractPrNumber(environmentName) {
   const match = environmentName.match(/^pr-(\d+)$/i);
   return match ? match[1] : null;
@@ -219,30 +265,28 @@ export function extractPrNumber(environmentName) {
  * @param {string} project - The project name within the Lagoon instance.
  * @param {string} environment - The environment name to clear the cache for.
  * @returns {string} The trimmed output from the Drush cache clear command.
- *
  * @throws {Error} If the cache clearing operation fails for the specified environment.
  */
 export async function clearDrupalCache(instance, project, environment) {
   try {
-    const command = `lagoon ssh -l ${instance} -p ${project} -e ${environment} -C "drush cr"`;
-    const { stdout } = await execLagoonCommand(command, `Clear Cache for ${environment} in ${project}`);
+    const command = new LagoonCommand()
+      .withInstance(instance)
+      .withProject(project)
+      .withEnvironment(environment)
+      .ssh("drush cr");
+    
+    const { stdout } = await execCommand(command, `Clear Cache for ${environment} in ${project}`);
     return stdout.trim();
   } catch (error) {
     throw new Error(`Failed to clear cache for environment ${environment}: ${error.message}`);
   }
 }
 
-// No helper functions needed for the more efficient git ls-remote approach
-
 /**
  * Retrieves all branch names from a remote Git repository.
  *
- * Executes `git ls-remote --heads` on the provided repository URL and parses the output to return an array of branch
- * names.
- *
  * @param {string} gitUrl - The URL of the Git repository.
  * @returns {Promise<string[]>} An array of branch names found in the repository.
- *
  * @throws {Error} If the Git URL is missing, invalid, authentication fails, the repository is not found, or another
  * error occurs during command execution.
  */
@@ -252,12 +296,12 @@ export async function getGitBranches(gitUrl) {
       throw new Error('Git URL not provided or invalid');
     }
 
-    // Use git ls-remote to list all references (only the heads/branches)
-    const command = `git ls-remote --heads ${gitUrl}`;
-    console.log(chalk.blue(`Executing: ${chalk.bold(command)}`));
-
+    const command = new GitCommand().lsRemote(gitUrl);
+    
+    console.log(chalk.blue(`Fetching branches from repository: ${chalk.bold(gitUrl)}`));
+    
     try {
-      const { stdout, stderr } = await execAsync(command);
+      const { stdout, stderr } = await execCommand(command, `List Branches for ${gitUrl}`);
 
       // Log any warnings from stderr
       if (stderr) {
@@ -299,14 +343,11 @@ export async function getGitBranches(gitUrl) {
 /**
  * Deploys a specified branch to a Lagoon project environment.
  *
- * Validates the branch name for allowed characters and escapes special shell characters to prevent command injection.
- * Executes the Lagoon CLI to initiate deployment and parses the JSON response.
- *
- * @param {string} branch - The name of the branch to deploy. Must contain only alphanumeric characters, slashes,
- * underscores, hyphens, and periods.
+ * @param {string} instance - The Lagoon instance name.
+ * @param {string} project - The project name.
+ * @param {string} branch - The name of the branch to deploy.
  * @returns {{ success: true, message: string }} An object indicating successful initiation of the deployment and
  * a descriptive message.
- *
  * @throws {Error} If the branch name is invalid, the Lagoon CLI command fails, or the deployment is unsuccessful.
  */
 export async function deployBranch(instance, project, branch) {
@@ -316,12 +357,13 @@ export async function deployBranch(instance, project, branch) {
       throw new Error('Invalid branch name. Branch names must contain only alphanumeric characters, slashes, underscores, hyphens, and periods.');
     }
 
-    // Properly escape the branch name for use in command line
-    // More comprehensive escaping for shell safety
-    const escapedBranch = branch.replace(/["\\$`]/g, '\\$&');
-
-    const command = `lagoon -l ${instance} -p ${project} deploy branch --branch "${escapedBranch}" --output-json`;
-    const { stdout } = await execLagoonCommand(command, `Deploy Branch ${branch} to ${project}`);
+    const command = new LagoonCommand()
+      .withInstance(instance)
+      .withProject(project)
+      .deployBranch(branch)
+      .withJsonOutput();
+    
+    const { stdout } = await execCommand(command, `Deploy Branch ${branch} to ${project}`);
 
     // Parse the JSON response
     const response = JSON.parse(stdout);

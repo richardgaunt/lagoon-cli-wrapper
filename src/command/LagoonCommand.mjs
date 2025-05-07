@@ -126,6 +126,15 @@ export class LagoonCommand {
     }
     return this;
   }
+  
+  /**
+   * Configures command for login.
+   * @returns {LagoonCommand} - The current command instance for chaining.
+   */
+  login() {
+    this.args.push('login');
+    return this;
+  }
 
   /**
    * Configures command for SSH operation with a remote command.
