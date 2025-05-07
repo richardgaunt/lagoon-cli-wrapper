@@ -64,14 +64,8 @@ export async function getProjects(instance) {
   try {
     const command = `lagoon -l ${instance} list projects --output-json`;
     const { stdout } = await execLagoonCommand(command, `List Projects for ${instance}`);
-
-    // Parse the JSON output
     const projectsData = JSON.parse(stdout);
-
-    // Extract project names from the JSON data
-    const projects = projectsData.data.map(project => project.projectname);
-
-    return projects;
+    return projectsData.data.map(project => project.projectname);
   } catch (error) {
     throw new Error(`Failed to get projects for instance ${instance}: ${error.message}`);
   }

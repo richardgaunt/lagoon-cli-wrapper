@@ -135,7 +135,7 @@ async function selectLagoonInstance() {
     message: 'Select a Lagoon instance:',
     choices: instances.map(instance => ({
       value: instance,
-      label: instance
+      name: instance
     }))
   });
 
@@ -154,12 +154,16 @@ async function selectProjectWithDetails(instance) {
   spinner.stop();
 
   // Use search prompt with autocomplete functionality
+  const projectChoices = projectsWithDetails.map(project => ({
+    value: project.projectname,
+    name: project.projectname
+  }));
   const project = await search({
     message: 'Select a project (type to search):',
-    choices: projectsWithDetails.map(project => ({
-      value: project.projectname,
-      label: project.projectname
-    }))
+    source: (input) => {
+      input = input || '';
+      return projectChoices.filter(choice => choice.name.toLowerCase().includes(input.toLowerCase()));
+    }
   });
 
   const projectDetails = projectsWithDetails.find(p => p.projectname === project);
@@ -180,24 +184,25 @@ async function selectProjectWithDetails(instance) {
 async function showMainMenu(instance, project) {
   console.log(chalk.blue(`\nCurrent Instance: ${chalk.bold(instance)}`));
   console.log(chalk.blue(`Current Project: ${chalk.bold(project)}\n`));
-
-  const action = await search({
+  const actions = [
+    { value: 'listEnvironments', name: 'List Environments' },
+    { value: 'listUsers', name: 'List Users' },
+    { value: 'deleteEnvironment', name: 'Delete Environment' },
+    { value: 'generateLoginLink', name: 'Generate Login Link' },
+    { value: 'clearCache', name: 'Clear Drupal Cache' },
+    { value: 'deployBranch', name: 'Deploy Branch' },
+    { value: 'changeProject', name: 'Change Project' },
+    { value: 'changeInstance', name: 'Change Instance' },
+    { value: 'configureUserSshKey', name: 'Configure User SSH Key' },
+    { value: 'exit', name: 'Exit' }
+  ];
+  return search({
     message: 'What would you like to do? (type to search)',
-    choices: [
-      { value: 'listEnvironments', label: 'List Environments' },
-      { value: 'listUsers', label: 'List Users' },
-      { value: 'deleteEnvironment', label: 'Delete Environment' },
-      { value: 'generateLoginLink', label: 'Generate Login Link' },
-      { value: 'clearCache', label: 'Clear Drupal Cache' },
-      { value: 'deployBranch', label: 'Deploy Branch' },
-      { value: 'changeProject', label: 'Change Project' },
-      { value: 'changeInstance', label: 'Change Instance' },
-      { value: 'configureUserSshKey', label: 'Configure User SSH Key' },
-      { value: 'exit', label: 'Exit' }
-    ]
+    source: (input) => {
+      input = input || '';
+      return actions.filter(action => action.name.toLowerCase().includes(input.toLowerCase()));
+    }
   });
-
-  return action;
 }
 
 async function listEnvironments(instance, project, githubBaseUrl) {
@@ -277,12 +282,12 @@ async function deleteEnvironmentFlow(instance, project, githubBaseUrl) {
       const prUrl = `${githubBaseUrl}/pull/${prNumber}`;
       return {
         value: env,
-        label: `${env} (PR #${prNumber}: ${prUrl})`
+        name: `${env} (PR #${prNumber}: ${prUrl})`
       };
     }
     return {
       value: env,
-      label: env
+      name: env
     };
   });
 
@@ -345,12 +350,12 @@ async function generateLoginLinkFlow(instance, project, githubBaseUrl) {
     if (prNumber && githubBaseUrl) {
       return {
         value: env,
-        label: `${env} (PR #${prNumber})`
+        name: `${env} (PR #${prNumber})`
       };
     }
     return {
       value: env,
-      label: env
+      name: env
     };
   });
 
@@ -400,12 +405,12 @@ async function clearCacheFlow(instance, project, githubBaseUrl) {
     if (prNumber && githubBaseUrl) {
       return {
         value: env,
-        label: `${env} (PR #${prNumber})`
+        name: `${env} (PR #${prNumber})`
       };
     }
     return {
       value: env,
-      label: env
+      name: env
     };
   });
 
@@ -486,7 +491,7 @@ async function deployBranchFlow(instance, project, projectDetails) {
     // Create choices array for the select prompt
     const choices = sortedBranches.map(branch => ({
       value: branch,
-      label: branch
+      name: branch
     }));
 
     // Allow user to select a branch
