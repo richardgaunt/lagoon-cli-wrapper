@@ -53,8 +53,10 @@ This will start the interactive mode, which will guide you through:
 
 ## Features
 
-- Interactive CLI interface
+- Interactive CLI interface with autocomplete search
 - Easy navigation between instances and projects
+- Type-to-search project selection with autocomplete
+- Fast action selection with search capability
 - Safe environment deletion (prevents deletion of protected environments)
 - GitHub PR integration for PR environments
 - One-click login link generation for Drupal environments
