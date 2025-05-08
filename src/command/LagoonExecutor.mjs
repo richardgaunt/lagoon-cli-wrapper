@@ -25,7 +25,7 @@ export class LagoonExecutor {
   async execute(command, action = 'Unknown Action') {
     const baseCommand = command.getBaseCommand();
     const args = command.getArgs();
-    
+
     console.log(chalk.blue(`Executing: ${chalk.bold(command.toString())}`));
 
     try {

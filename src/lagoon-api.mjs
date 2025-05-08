@@ -7,7 +7,7 @@ const executor = new LagoonExecutor({ logAction, logError });
 
 /**
  * Executes a Lagoon command securely using the LagoonExecutor.
- * 
+ *
  * @param {LagoonCommand|GitCommand} command - The command to execute.
  * @param {string} action - Description of the action for logging.
  * @returns {Promise<Object>} - Promise resolving to { stdout, stderr }.
@@ -19,7 +19,7 @@ export async function execCommand(command, action = 'Unknown Action') {
 
 /**
  * Get all Lagoon instances from the config.
- * 
+ *
  * @returns {Promise<string[]>} Array of Lagoon instance names.
  * @throws {Error} If the command fails or the response can't be parsed.
  */
@@ -28,7 +28,7 @@ export async function getLagoonInstances() {
     const command = new LagoonCommand()
       .listConfigs()
       .withJsonOutput();
-    
+
     const { stdout } = await execCommand(command, 'List Lagoon Instances');
 
     // Parse the JSON output
@@ -51,7 +51,7 @@ export async function getLagoonInstances() {
 
 /**
  * Get all projects for a Lagoon instance with full details.
- * 
+ *
  * @param {string} instance - Lagoon instance name.
  * @returns {Promise<Object[]>} Array of project details.
  * @throws {Error} If the command fails or the response can't be parsed.
@@ -62,7 +62,7 @@ export async function getProjectsWithDetails(instance) {
       .withInstance(instance)
       .listProjects()
       .withJsonOutput();
-    
+
     const { stdout } = await execCommand(command, `List Projects for ${instance}`);
 
     // Parse the JSON output
@@ -77,7 +77,7 @@ export async function getProjectsWithDetails(instance) {
 
 /**
  * Get all project names for a Lagoon instance.
- * 
+ *
  * @param {string} instance - Lagoon instance name.
  * @returns {Promise<string[]>} Array of project names.
  * @throws {Error} If the command fails or the response can't be parsed.
@@ -88,9 +88,9 @@ export async function getProjects(instance) {
       .withInstance(instance)
       .listProjects()
       .withJsonOutput();
-    
+
     const { stdout } = await execCommand(command, `List Projects for ${instance}`);
-    
+
     const projectsData = JSON.parse(stdout);
     return projectsData.data.map(project => project.projectname);
   } catch (error) {
@@ -100,7 +100,7 @@ export async function getProjects(instance) {
 
 /**
  * Get all environments for a project.
- * 
+ *
  * @param {string} instance - Lagoon instance name.
  * @param {string} project - Project name.
  * @returns {Promise<string[]>} Array of environment names.
@@ -113,7 +113,7 @@ export async function getEnvironments(instance, project) {
       .withProject(project)
       .listEnvironments()
       .withJsonOutput();
-    
+
     const { stdout } = await execCommand(command, `List Environments for ${project}`);
 
     // Parse the JSON output
@@ -142,7 +142,7 @@ export async function getUsers(instance, project) {
       .withInstance(instance)
       .withProject(project)
       .listUsers();
-    
+
     const { stdout } = await execCommand(command, `List Users for ${project}`);
     const lines = stdout.split('\n').filter(line => line.trim() !== '');
 
@@ -185,9 +185,9 @@ export async function deleteEnvironment(instance, project, environment) {
       .deleteEnvironment(environment)
       .withForce()
       .withJsonOutput();
-    
+
     const { stdout } = await execCommand(command, `Delete Environment ${environment} from ${project}`);
-    
+
     const response = JSON.parse(stdout);
     if (response.result === 'success') {
       console.log(chalk.green(`Environment ${environment} deleted successfully`));
@@ -220,8 +220,8 @@ export async function generateLoginLink(instance, project, environment) {
       .withInstance(instance)
       .withProject(project)
       .withEnvironment(environment)
-      .ssh("drush user:unblock --uid=1 && drush uli");
-    
+      .ssh('drush user:unblock --uid=1 && drush uli');
+
     const { stdout } = await execCommand(command, `Generate Login Link for ${environment} in ${project}`);
     return stdout.trim();
   } catch (error) {
@@ -240,7 +240,7 @@ export function gitUrlToGithubUrl(gitUrl) {
   if (!gitUrl) {
     return null;
   }
-  
+
   // Handle SSH URLs like git@github.com:org/repo.git
   if (gitUrl.startsWith('git@github.com:')) {
     const path = gitUrl.replace('git@github.com:', '').replace('.git', '');
@@ -254,7 +254,7 @@ export function gitUrlToGithubUrl(gitUrl) {
 
 /**
  * Helper function to extract PR number from environment name
- * 
+ *
  * @param {string} environmentName - Environment name to parse.
  * @returns {string|null} PR number or null if not found.
  */
@@ -263,7 +263,7 @@ export function extractPrNumber(environmentName) {
   if (!environmentName) {
     return null;
   }
-  
+
   const match = environmentName.match(/^pr-(\d+)$/i);
   return match ? match[1] : null;
 }
@@ -283,8 +283,8 @@ export async function clearDrupalCache(instance, project, environment) {
       .withInstance(instance)
       .withProject(project)
       .withEnvironment(environment)
-      .ssh("drush cr");
-    
+      .ssh('drush cr');
+
     const { stdout } = await execCommand(command, `Clear Cache for ${environment} in ${project}`);
     return stdout.trim();
   } catch (error) {
@@ -307,9 +307,9 @@ export async function getGitBranches(gitUrl) {
     }
 
     const command = new GitCommand().lsRemote(gitUrl);
-    
+
     console.log(chalk.blue(`Fetching branches from repository: ${chalk.bold(gitUrl)}`));
-    
+
     try {
       const { stdout, stderr } = await execCommand(command, `List Branches for ${gitUrl}`);
 
@@ -370,9 +370,10 @@ export async function deployBranch(instance, project, branch) {
     const command = new LagoonCommand()
       .withInstance(instance)
       .withProject(project)
+      .withForce()
       .deployBranch(branch)
       .withJsonOutput();
-    
+
     const { stdout } = await execCommand(command, `Deploy Branch ${branch} to ${project}`);
 
     // Parse the JSON response

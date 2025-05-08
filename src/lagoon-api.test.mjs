@@ -1,16 +1,7 @@
 import { jest } from '@jest/globals';
-import { 
-  gitUrlToGithubUrl, 
-  extractPrNumber, 
-  getLagoonInstances,
-  getProjectsWithDetails,
-  getEnvironments,
-  getUsers,
-  clearDrupalCache,
-  generateLoginLink,
-  deleteEnvironment,
-  deployBranch,
-  getGitBranches
+import {
+  gitUrlToGithubUrl,
+  extractPrNumber,
 } from './lagoon-api.mjs';
 
 // Mock the execCommand function
@@ -49,7 +40,7 @@ jest.unstable_mockModule('./command/index.mjs', () => ({
 // Mock the execCommand function
 jest.mock('./lagoon-api.mjs', () => {
   const originalModule = jest.requireActual('./lagoon-api.mjs');
-  
+
   // Only mock the async API functions, keep the helper functions as is
   return {
     ...originalModule,

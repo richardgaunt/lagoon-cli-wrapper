@@ -96,5 +96,15 @@ export default [
       // Allow process.exit() in CLI applications
       'n/no-process-exit': 'off'
     }
+  },
+  {
+    files: ['**/*.test.js', '**/*.test.mjs'],
+    rules: {
+      // Allow importing @jest/globals in test files
+      'n/no-extraneous-import': ['error', {
+        allowModules: ['@jest/globals']
+      }]
+    }
   }
+
 ];
