@@ -124,11 +124,11 @@ export async function configureSshKey(instanceName) {
 export async function refreshLagoonToken(instanceName) {
   try {
     console.log(chalk.blue(`Refreshing token for ${chalk.bold(instanceName)}...`));
-    
+
     const command = new LagoonCommand()
       .withInstance(instanceName)
       .login();
-    
+
     await execCommand(command, `Refresh Token for ${instanceName}`);
     console.log(chalk.green(`Successfully refreshed token for ${chalk.bold(instanceName)}`));
     return true;

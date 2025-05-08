@@ -15,8 +15,8 @@ describe('GitCommand', () => {
   test('lsRemote should set the ls-remote command with heads option', () => {
     command.lsRemote('https://github.com/example/repo.git');
     expect(command.getArgs()).toEqual([
-      'ls-remote', 
-      '--heads', 
+      'ls-remote',
+      '--heads',
       'https://github.com/example/repo.git'
     ]);
   });
@@ -29,9 +29,9 @@ describe('GitCommand', () => {
   test('getCommandArray should return full command array', () => {
     command.lsRemote('https://github.com/example/repo.git');
     expect(command.getCommandArray()).toEqual([
-      'git', 
-      'ls-remote', 
-      '--heads', 
+      'git',
+      'ls-remote',
+      '--heads',
       'https://github.com/example/repo.git'
     ]);
   });

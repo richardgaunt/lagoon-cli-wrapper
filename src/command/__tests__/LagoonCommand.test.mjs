@@ -96,7 +96,7 @@ describe('LagoonCommand', () => {
       .withEnvironment('dev')
       .withJsonOutput()
       .withForce();
-    
+
     expect(command.getArgs()).toEqual([
       '-l', 'amazee.io',
       '-p', 'test-project',

@@ -1,6 +1,6 @@
 /**
  * GitCommand class for building secure, structured Git commands.
- * 
+ *
  * Similar to LagoonCommand, but for Git operations. Uses the same builder pattern
  * for secure command execution.
  */

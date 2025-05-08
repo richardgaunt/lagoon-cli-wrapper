@@ -1,6 +1,6 @@
 /**
  * LagoonCommand class for building secure, structured Lagoon CLI commands.
- * 
+ *
  * This class uses a builder pattern to construct commands with proper argument separation
  * for secure execution using child_process.execFile (instead of string interpolation).
  */
@@ -126,7 +126,7 @@ export class LagoonCommand {
     }
     return this;
   }
-  
+
   /**
    * Configures command for login.
    * @returns {LagoonCommand} - The current command instance for chaining.
