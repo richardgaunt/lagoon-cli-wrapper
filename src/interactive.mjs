@@ -495,9 +495,12 @@ async function deployBranchFlow(instance, project, projectDetails) {
     }));
 
     // Allow user to select a branch
-    const selectedBranch = await select({
+    const selectedBranch = await search({
       message: 'Select a branch to deploy:',
-      choices: choices,
+      source: (input) => {
+        input = input || '';
+        return choices.filter(choice => choice.name.toLowerCase().includes(input.toLowerCase()));
+      },
       // Modern select doesn't have autocomplete but we can set reasonable pagination
       loop: true,
       pageSize: 10
