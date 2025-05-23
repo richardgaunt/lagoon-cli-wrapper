@@ -2,6 +2,7 @@
 
 [![Tests](https://github.com/richardgaunt/lagoon-cli-wrapper/actions/workflows/tests.yml/badge.svg)](https://github.com/richardgaunt/lagoon-cli-wrapper/actions/workflows/tests.yml)
 [![Linting](https://github.com/richardgaunt/lagoon-cli-wrapper/actions/workflows/lint.yml/badge.svg)](https://github.com/richardgaunt/lagoon-cli-wrapper/actions/workflows/lint.yml)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/richardgaunt/lagoon-cli-wrapper?utm_source=oss&utm_medium=github&utm_campaign=richardgaunt%2Flagoon-cli-wrapper&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 A Node.js CLI wrapper for the Lagoon CLI that provides an interactive interface for common operations.
 
