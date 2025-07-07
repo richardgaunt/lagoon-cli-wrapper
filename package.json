@@ -23,7 +23,7 @@
     "commander": "^14.0.0",
     "eslint": "^9.24.0",
     "eslint-plugin-n": "^17.18.0",
-    "globals": "^16.1.0",
+    "globals": "^16.3.0",
     "js-yaml": "^4.1.0",
     "ora": "^8.2.0"
   },
