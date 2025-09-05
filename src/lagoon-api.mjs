@@ -351,6 +351,29 @@ export async function getGitBranches(gitUrl) {
 }
 
 /**
+ * Generates an SSH command for connecting to a Lagoon environment.
+ * Returns the command string that users can copy and run in their own terminal.
+ *
+ * @param {string} instance - The Lagoon instance name.
+ * @param {string} project - The project name.
+ * @param {string} environment - The environment name.
+ * @param {string} [container] - Optional container/service name to SSH into.
+ * @returns {{ command: string, message: string }} Object with the SSH command and descriptive message.
+ */
+export function getSSHCommand(instance, project, environment, container = null) {
+  let sshCommand = `lagoon ssh -l ${instance} -p ${project} -e ${environment}`;
+  
+  if (container) {
+    sshCommand += ` -s ${container}`;
+  }
+  
+  return {
+    command: sshCommand,
+    message: `Copy and run this command in a new terminal to SSH into ${environment}${container ? ` (${container} container)` : ''}:`
+  };
+}
+
+/**
  * Deploys a specified branch to a Lagoon project environment.
  *
  * @param {string} instance - The Lagoon instance name.
