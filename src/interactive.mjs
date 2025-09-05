@@ -11,7 +11,8 @@ import {
   gitUrlToGithubUrl,
   extractPrNumber,
   getGitBranches,
-  deployBranch
+  deployBranch,
+  getSSHCommand
 } from './lagoon-api.mjs';
 import { logAction } from './logger.mjs';
 import { configureSshKey } from './lagoon-ssh-key-configurator.mjs';
@@ -87,6 +88,9 @@ export async function startInteractiveMode() {
           break;
         case 'deployBranch':
           await deployBranchFlow(currentInstance, currentProject, currentProjectDetails);
+          break;
+        case 'sshToEnvironment':
+          await sshToEnvironmentFlow(currentInstance, currentProject, githubBaseUrl);
           break;
         case 'configureUserSshKey':
           await configureSshKey(currentInstance, currentProject);
@@ -191,6 +195,7 @@ async function showMainMenu(instance, project) {
     { value: 'generateLoginLink', name: 'Generate Login Link' },
     { value: 'clearCache', name: 'Clear Drupal Cache' },
     { value: 'deployBranch', name: 'Deploy Branch' },
+    { value: 'sshToEnvironment', name: 'SSH to Environment' },
     { value: 'changeProject', name: 'Change Project' },
     { value: 'changeInstance', name: 'Change Instance' },
     { value: 'configureUserSshKey', name: 'Configure User SSH Key' },
@@ -536,6 +541,87 @@ async function deployBranchFlow(instance, project, projectDetails) {
   } catch (error) {
     spinner.fail(`Failed to fetch branches: ${error.message}`);
   }
+
+  await input({
+    message: 'Press Enter to continue...'
+  });
+}
+
+/**
+ * Guides the user through generating an SSH command for connecting to a Lagoon environment.
+ *
+ * @param {string} instance - The Lagoon instance identifier.
+ * @param {string} project - The Lagoon project name.
+ * @param {string} githubBaseUrl - The GitHub base URL for the project (for PR information).
+ */
+async function sshToEnvironmentFlow(instance, project, githubBaseUrl) {
+  const spinner = ora(`Loading environments for ${project}...`).start();
+  const allEnvironments = await getEnvironments(instance, project);
+  spinner.stop();
+
+  if (allEnvironments.length === 0) {
+    console.log(chalk.yellow('\nNo environments found.'));
+    await input({
+      message: 'Press Enter to continue...'
+    });
+    return;
+  }
+
+  // Create choices with PR information
+  const choices = allEnvironments.map(env => {
+    const prNumber = extractPrNumber(env);
+    if (prNumber && githubBaseUrl) {
+      return {
+        value: env,
+        name: `${env} (PR #${prNumber})`
+      };
+    }
+    return {
+      value: env,
+      name: env
+    };
+  });
+
+  const selectedEnvironment = await select({
+    message: 'Select an environment to SSH into:',
+    choices: choices
+  });
+
+  // Ask for container with 'cli' as default
+  const container = await input({
+    message: 'Enter the container/service name (press Enter for default):',
+    default: 'cli'
+  });
+
+  // Generate the SSH command
+  const { command, message } = getSSHCommand(instance, project, selectedEnvironment, container);
+
+  // Display the command
+  console.log('\n' + chalk.cyan(message));
+  console.log(chalk.yellow.bold('\n' + command + '\n'));
+
+  // Offer to copy to clipboard (if clipboardy is available)
+  try {
+    const clipboardy = await import('clipboardy');
+    const copyToClipboard = await confirm({
+      message: 'Copy command to clipboard?',
+      default: true
+    });
+
+    if (copyToClipboard) {
+      try {
+        await clipboardy.default.write(command);
+        console.log(chalk.green('✓ Command copied to clipboard'));
+      } catch (error) {
+        console.log(chalk.yellow('Could not copy to clipboard. Please copy the command manually.'));
+      }
+    }
+  } catch (error) {
+    // clipboardy not available, skip clipboard option
+    console.log(chalk.gray('Copy the command above and run it in a new terminal window.'));
+  }
+
+  console.log(chalk.gray('\nTip: Run this command in a new terminal window to maintain your SSH session while continuing to use this CLI.'));
 
   await input({
     message: 'Press Enter to continue...'
