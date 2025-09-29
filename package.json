@@ -32,7 +32,7 @@
     "node": ">22"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
+    "jest": "^30.2.0"
   },
   "type": "module"
 }
