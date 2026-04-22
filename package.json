@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A CLI wrapper for Lagoon CLI",
   "main": "index.mjs",
+  "bin": {
+    "lh": "./index.mjs"
+  },
   "scripts": {
     "start": "node index.mjs",
     "lint": "eslint . --ext .mjs",
